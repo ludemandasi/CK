@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>🎬 AI 视频工作台</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',Helvetica,Arial,sans-serif;
+    background:linear-gradient(135deg,#0f0c29 0%,#302b63 50%,#24243e 100%);
+    min-height:100vh;padding:40px 20px;overflow-x:hidden;animation:fadeIn .6s ease}
+  @keyframes fadeIn{0%{opacity:0;transform:translateY(20px)}100%{opacity:1;transform:translateY(0)}}
+
+  ::-webkit-scrollbar{width:6px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:3px}
+  ::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.25)}
+
+  #particleCanvas{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0}
+  #confettiCanvas{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1000;display:none}
+
+  .container{position:relative;z-index:1;max-width:640px;margin:0 auto;
+    background:rgba(255,255,255,.06);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+    border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:36px 28px;
+    box-shadow:0 24px 60px rgba(0,0,0,.35)}
+
+  .video-icon{text-align:center;margin-bottom:8px}
+  h2{color:#fff;font-size:40px;display:inline-block;animation:float 3s ease-in-out infinite}
+  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+  .subtitle{color:rgba(255,255,255,.4);text-align:center;font-size:13px;margin-bottom:28px;letter-spacing:2px}
+
+  .section{margin-bottom:18px}
+
+  label{display:block;margin-top:12px;font-weight:600;color:rgba(255,255,255,.75);font-size:13px}
+  input[type="text"],input:not([type]),input[type="number"],textarea,select{
+    width:100%;padding:10px 13px;margin-top:4px;
+    background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;
+    font-size:14px;color:#fff;transition:all .25s}
+  input::placeholder,textarea::placeholder{color:rgba(255,255,255,.25)}
+  input:focus,textarea:focus,select:focus{outline:0;border-color:#667eea;
+    background:rgba(255,255,255,.09);box-shadow:0 0 16px rgba(102,126,234,.15)}
+  select{cursor:pointer}
+  select option{background:#1a1a2e;color:#fff}
+
+  .dropdown{position:relative;margin-top:4px}
+  .dropdown-trigger{display:flex;align-items:center;justify-content:space-between;
+    padding:10px 13px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
+    border-radius:10px;font-size:14px;color:#fff;cursor:pointer;transition:all .25s;user-select:none}
+  .dropdown-trigger:hover{border-color:rgba(255,255,255,.2);background:rgba(255,255,255,.09)}
+  .dropdown-trigger.open{border-color:#667eea;
+    box-shadow:0 0 16px rgba(102,126,234,.15);background:rgba(255,255,255,.09)}
+  .dropdown-arrow{width:14px;height:14px;transition:transform .3s ease;flex-shrink:0;
+    background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='8'%3E%3Cpath d='M1 1l6 6 6-6' stroke='rgba(255,255,255,.5)' stroke-width='1.5' fill='none'/%3E%3C/svg%3E") center no-repeat;background-size:contain}
+  .dropdown-trigger.open .dropdown-arrow{transform:rotate(180deg)}
+
+  .dropdown-menu{position:absolute;top:calc(100% + 6px);left:0;right:0;
+    background:rgba(30,27,60,.96);backdrop-filter:blur(12px);
+    border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:4px;z-index:100;
+    max-height:0;opacity:0;overflow:hidden;
+    transition:max-height .35s ease,opacity .25s ease,padding .35s ease}
+  .dropdown-menu.open{max-height:240px;opacity:1;padding:6px;overflow-y:auto;
+    box-shadow:0 12px 32px rgba(0,0,0,.4)}
+  .dropdown-option{padding:9px 12px;border-radius:6px;font-size:14px;color:rgba(255,255,255,.75);
+    cursor:pointer;transition:all .15s}
+  .dropdown-option:hover{background:rgba(102,126,234,.2);color:#fff}
+  .dropdown-option.active{background:rgba(102,126,234,.25);color:#fff;font-weight:600}
+
+  .file-area{margin-top:4px;padding:16px;border:2px dashed rgba(255,255,255,.12);border-radius:10px;
+    text-align:center;cursor:pointer;transition:all .25s;position:relative}
+  .file-area:hover{border-color:rgba(102,126,234,.5);background:rgba(102,126,234,.05)}
+  .file-area .text{color:rgba(255,255,255,.35);font-size:13px}
+  .file-area .count{color:#667eea;font-weight:600;font-size:13px;margin-top:2px}
+  .file-area input[type="file"]{position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer}
+
+  .image-preview{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:8px;margin-top:8px}
+  .preview-item{position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;border:2px solid rgba(255,255,255,.1)}
+  .preview-item img{width:100%;height:100%;object-fit:cover}
+  .preview-item .remove{position:absolute;top:4px;right:4px;width:20px;height:20px;
+    background:rgba(255,0,0,.7);border-radius:50%;color:#fff;font-size:12px;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s}
+  .preview-item .remove:hover{background:rgba(255,0,0,.9);transform:scale(1.1)}
+
+  .row{display:flex;gap:10px}
+  .row>*{flex:1}
+
+  .url-preview{font-family:'Courier New',monospace;font-size:11px;color:rgba(255,255,255,.25);
+    word-break:break-all;margin-top:8px;padding:6px 10px;background:rgba(0,0,0,.15);border-radius:6px}
+  .url-preview span{color:#667eea}
+
+  .submit-btn{display:block;width:auto;margin:24px auto 0;padding:16px 48px;font-size:16px;font-weight:700;color:#fff;
+    background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);border:0;border-radius:10px;cursor:pointer;
+    transition:all .3s;letter-spacing:.5px;position:relative;overflow:hidden}
+  .submit-btn:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(102,126,234,.35)}
+  .submit-btn:active{transform:scale(.96)}
+  .submit-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+  .submit-btn .spinner{display:none;width:18px;height:18px;border:2px solid rgba(255,255,255,.3);
+    border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;margin:0 auto}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .submit-btn.loading .btn-text{display:none}
+  .submit-btn.loading .spinner{display:block}
+
+  .overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);
+    backdrop-filter:blur(4px);z-index:999;justify-content:center;align-items:center}
+  .overlay.show{display:flex}
+  .dialog{background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid rgba(255,255,255,.1);
+    border-radius:16px;padding:32px;text-align:center;max-width:380px;width:90%;
+    box-shadow:0 24px 60px rgba(0,0,0,.5);animation:popIn .3s ease}
+  @keyframes popIn{0%{transform:scale(.85);opacity:0}50%{transform:scale(1.02)}100%{transform:scale(1);opacity:1}}
+  .dialog .icon{font-size:48px;margin-bottom:12px}
+  .dialog p{font-size:15px;color:rgba(255,255,255,.8);margin-bottom:18px;font-weight:600}
+  .dialog button{padding:9px 36px;font-size:14px;width:auto;border-radius:8px;
+    background:linear-gradient(135deg,#667eea,#764ba2);border:0;color:#fff;font-weight:600;cursor:pointer}
+</style></head><body>
+
+<canvas id="particleCanvas"></canvas>
+<canvas id="confettiCanvas"></canvas>
+
+<div class="container">
+  <div class="video-icon"><h2>🎬</h2></div>
+  <div class="subtitle">视频工作室</div>
+
+  <input type="hidden" id="n8nUrl" value="http://192.168.31.23:5678">
+
+  <div class="section">
+    <div class="row">
+      <div><label>类型</label>
+      <div class="dropdown" id="dd-webhookType">
+        <div class="dropdown-trigger" onclick="toggleDropdown('dd-webhookType')">
+          <span class="dd-value">测试</span><div class="dropdown-arrow"></div>
+        </div>
+        <div class="dropdown-menu">
+          <div class="dropdown-option active" data-value="webhook-test">测试</div>
+          <div class="dropdown-option" data-value="webhook">生产</div>
+        </div>
+      </div></div>
+      <div><label>路径</label>
+      <input type="text" id="webhookPath" value="kevin-banana-video" oninput="buildWebhookUrl()"></div>
+    </div>
+    <div class="url-preview">→ <span id="webhookPreview">填写 n8n 地址后自动生成</span></div>
+  </div>
+
+  <div class="section">
+    <label>产品名称</label>
+    <input type="text" id="productName" placeholder="输入产品名称">
+    <label>产品介绍 <span id="descCounter" style="color:rgba(255,255,255,.35);font-weight:400">0/50</span></label>
+    <textarea id="productDesc" rows="2" placeholder="输入产品介绍文案（20-50字，仅外观描述）" maxlength="50" oninput="var c=document.getElementById(&#39;descCounter&#39;);c.textContent=this.value.length+&#39;/50&#39;;c.style.color=this.value.length>=50?&#39;rgba(255,100,100,.5)&#39;:&#39;rgba(255,255,255,.35)&#39;"></textarea>
+    <label>产品图</label>
+    <div class="file-area" id="fileArea">
+      <div class="text">点击或拖拽上传</div>
+      <div class="count" id="imageCount">已选 0 张</div>
+      <input type="file" id="imageInput" multiple accept="image/*">
+    </div>
+    <div class="image-preview" id="imagePreview"></div>
+  </div>
+
+  <div class="section">
+    <div class="row">
+      <div><label>品牌</label>
+        <input type="text" id="brand" placeholder="输入品牌名称"></div>
+      <div><label>模特</label>
+        <div class="dropdown" id="dd-model">
+          <div class="dropdown-trigger" onclick="toggleDropdown('dd-model')">
+            <span class="dd-value">女性</span><div class="dropdown-arrow"></div>
+          </div>
+          <div class="dropdown-menu">
+            <div class="dropdown-option active" data-value="女性">女性</div>
+            <div class="dropdown-option" data-value="男性">男性</div>
+            <div class="dropdown-option" data-value="儿童">儿童</div>
+          </div>
+        </div></div>
+
+    </div>
+  </div>
+
+  <div class="row" style="margin-top:6px">
+        <div><label>品牌风格</label>
+          <div class="dropdown" id="dd-brandStyle">
+            <div class="dropdown-trigger" onclick="toggleDropdown(&#39;dd-brandStyle&#39;)">
+              <span class="dd-value">ZARA/COS极简</span><div class="dropdown-arrow"></div>
+            </div>
+            <div class="dropdown-menu">
+              <div class="dropdown-option active" data-value="ZARA/COS极简">ZARA/COS极简</div>
+              <div class="dropdown-option" data-value="Lemaire侘寂">Lemaire侘寂</div>
+              <div class="dropdown-option" data-value="The Row静奢">The Row静奢</div>
+              <div class="dropdown-option" data-value="Jil Sander纯粹">Jil Sander纯粹</div>
+              <div class="dropdown-option" data-value="Uniqlo实用">Uniqlo实用</div>
+              <div class="dropdown-option" data-value="运动活力">运动活力</div>
+            </div>
+          </div></div>
+        <div><label>成片时长</label>
+          <div class="dropdown" id="dd-duration">
+            <div class="dropdown-trigger" onclick="toggleDropdown(&#39;dd-duration&#39;)">
+              <span class="dd-value">15秒标准款 (3分镜)</span><div class="dropdown-arrow"></div>
+            </div>
+            <div class="dropdown-menu">
+              <div class="dropdown-option active" data-value="15">15秒标准款 (3分镜)</div>
+              <div class="dropdown-option" data-value="25">25秒展示款 (4分镜)</div>
+            </div>
+          </div></div>
+        <div><label>背景</label>
+          <div class="dropdown" id="dd-background">
+            <div class="dropdown-trigger" onclick="toggleDropdown(&#39;dd-background&#39;)">
+              <span class="dd-value">纯白摄影棚</span><div class="dropdown-arrow"></div>
+            </div>
+            <div class="dropdown-menu">
+              <div class="dropdown-option active" data-value="纯白摄影棚">纯白摄影棚</div>
+              <div class="dropdown-option" data-value="模糊沙滩">模糊沙滩</div>
+            </div>
+          </div></div>
+        <div><label>视频比例</label>
+          <div class="dropdown" id="dd-videoRatio">
+            <div class="dropdown-trigger" onclick="toggleDropdown(&#39;dd-videoRatio&#39;)">
+              <span class="dd-value">自适应</span><div class="dropdown-arrow"></div>
+            </div>
+            <div class="dropdown-menu">
+              <div class="dropdown-option active" data-value="adaptive">自适应</div>
+              <div class="dropdown-option" data-value="16:9">16:9 横屏</div>
+              <div class="dropdown-option" data-value="9:16">9:16 竖屏</div>
+              <div class="dropdown-option" data-value="1:1">1:1 方形</div>
+            </div>
+          </div></div>
+      </div>
+    </div>
+
+    <button id="submitBtn" class="submit-btn" onclick="submit()">
+    <span class="btn-text">提交生成视频</span>
+    <div class="spinner"></div>
+  </button>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="dialog">
+    <div class="icon" id="dialogIcon"></div>
+    <p id="dialogMsg"></p>
+    <button onclick="closeDialog()">确定</button>
+  </div>
+</div>
+
+<script>
+function toggleDropdown(id){
+  const dd=document.getElementById(id);
+  const trigger=dd.querySelector('.dropdown-trigger');
+  const menu=dd.querySelector('.dropdown-menu');
+  const isOpen=trigger.classList.contains('open');
+  document.querySelectorAll('.dropdown-trigger.open').forEach(t=>t.classList.remove('open'));
+  document.querySelectorAll('.dropdown-menu.open').forEach(m=>m.classList.remove('open'));
+  if(!isOpen){trigger.classList.add('open');menu.classList.add('open');}
+}
+document.querySelectorAll('.dropdown-option').forEach(opt=>{
+  opt.addEventListener('click',function(){
+    const dd=this.closest('.dropdown');
+    const trigger=dd.querySelector('.dd-value');
+    trigger.textContent=this.textContent;
+    dd.querySelectorAll('.dropdown-option').forEach(o=>o.classList.remove('active'));
+    this.classList.add('active');
+    dd.querySelector('.dropdown-trigger').classList.remove('open');
+    dd.querySelector('.dropdown-menu').classList.remove('open');
+    if(dd.id==='dd-webhookType')buildWebhookUrl();
+  });
+});
+document.addEventListener('click',function(e){
+  if(!e.target.closest('.dropdown')){
+    document.querySelectorAll('.dropdown-trigger.open').forEach(t=>t.classList.remove('open'));
+    document.querySelectorAll('.dropdown-menu.open').forEach(m=>m.classList.remove('open'));
+  }
+});
+function getDropdownValue(id){
+  const dd=document.getElementById(id);
+  const active=dd.querySelector('.dropdown-option.active');
+  return active?active.dataset.value:'';
+}
+
+// Particles (optimized)
+(function(){
+  const c=document.getElementById('particleCanvas');
+  const ctx=c.getContext('2d');
+  let W,H,particles=[],connSkip=0;
+  const COUNT=45;
+  const CONN_DIST=100;
+  function resize(){W=c.width=window.innerWidth;H=c.height=window.innerHeight;}
+  window.addEventListener('resize',resize);resize();
+  const colors=['102,126,234','118,75,162','240,147,251','130,200,255','255,255,255'];
+  class P{constructor(){this.reset(true);}
+    reset(init){
+      this.x=init?Math.random()*W:Math.random()>.5?-20:W+20;
+      this.y=init?Math.random()*H:H+20;
+      this.r=Math.random()<.12?2.5:Math.random()*1.5+.4;
+      this.color=colors[Math.random()*colors.length|0];
+      this.vx=(Math.random()-.5)*.35;this.vy=-(Math.random()*.3+.1);
+      this.alpha=Math.random()*.4+.08;
+    }
+    update(){
+      this.x+=this.vx;this.y+=this.vy;
+      if(this.y<-20||this.x<-40||this.x>W+40)this.reset(false);
+      return this.alpha;
+    }
+    draw(a){
+      ctx.fillStyle=`rgba(${this.color},${a})`;
+      ctx.beginPath();ctx.arc(this.x,this.y,this.r,0,Math.PI*2);ctx.fill();
+    }
+  }
+  for(let i=0;i<COUNT;i++)particles.push(new P());
+  function loop(){
+    ctx.clearRect(0,0,W,H);
+    particles.forEach(p=>{const a=p.update();p.draw(a);});
+    connSkip=(connSkip+1)%3;
+    if(connSkip===0){
+      for(let i=0;i<particles.length;i++){
+        if(particles[i].r<1.5)continue;
+        for(let j=i+1;j<particles.length;j++){
+          const dx=particles[i].x-particles[j].x,dy=particles[i].y-particles[j].y;
+          if(Math.abs(dx)>CONN_DIST||Math.abs(dy)>CONN_DIST)continue;
+          const d2=dx*dx+dy*dy;
+          if(d2<CONN_DIST*CONN_DIST){
+            ctx.beginPath();ctx.moveTo(particles[i].x,particles[i].y);ctx.lineTo(particles[j].x,particles[j].y);
+            ctx.strokeStyle=`rgba(${particles[i].color},${.12*(1-Math.sqrt(d2)/CONN_DIST)})`;ctx.lineWidth=.5;ctx.stroke();
+          }
+        }
+      }
+    }
+    requestAnimationFrame(loop);
+  }
+  loop();
+})();
+
+let images=[];
+document.getElementById('n8nUrl').oninput=buildWebhookUrl;
+buildWebhookUrl();
+
+function buildWebhookUrl(){
+  const base=document.getElementById('n8nUrl').value.replace(/\/+$/,'');
+  const type=getDropdownValue('dd-webhookType');
+  const path=document.getElementById('webhookPath').value;
+  const url=base?`${base}/${type}/${path}`:'填写 n8n 地址后自动生成';
+  document.getElementById('webhookPreview').textContent=url;
+}
+
+document.getElementById('imageInput').onchange=function(e){loadImages(e)};
+
+async function compressImage(b64,maxW=2000,quality=0.85){
+  return new Promise(resolve=>{
+    const img=new Image();img.onload=()=>{let w=img.width,h=img.height;if(w>maxW){h=Math.round(h*maxW/w);w=maxW;}
+      const cv=document.createElement('canvas');cv.width=w;cv.height=h;cv.getContext('2d').drawImage(img,0,0,w,h);
+      resolve(cv.toDataURL('image/jpeg',quality));};img.src=b64;});
+}
+
+async function loadImages(event){
+  images=[];
+  const preview=document.getElementById('imagePreview');
+  preview.innerHTML='';
+  for(const f of event.target.files){
+    const b64=await new Promise(r=>{const fr=new FileReader();fr.onload=e=>r(e.target.result);fr.readAsDataURL(f)});
+    const compressed=b64.length>1024*1024?await compressImage(b64):b64;
+    images.push(compressed);
+    const div=document.createElement('div');
+    div.className='preview-item';
+    div.innerHTML=`<img src="${compressed}"><div class="remove" onclick="removeImage(${images.length-1},this)">&times;</div>`;
+    preview.appendChild(div);
+  }
+  document.getElementById('imageCount').textContent='已选 '+images.length+' 张';
+}
+
+function removeImage(index,el){
+  images.splice(index,1);
+  el.parentElement.remove();
+  document.getElementById('imageCount').textContent='已选 '+images.length+'/3 张';
+}
+
+function showDialog(icon,msg){document.getElementById('dialogIcon').textContent=icon;
+  document.getElementById('dialogMsg').textContent=msg;document.getElementById('overlay').classList.add('show');
+  if(icon==='✅')launchConfetti();}
+function closeDialog(){document.getElementById('overlay').classList.remove('show');}
+
+function launchConfetti(){
+  const canvas=document.getElementById('confettiCanvas');
+  const ctx=canvas.getContext('2d');
+  const dpr=window.devicePixelRatio||1;
+  canvas.width=window.innerWidth*dpr;
+  canvas.height=window.innerHeight*dpr;
+  canvas.style.width=window.innerWidth+'px';
+  canvas.style.height=window.innerHeight+'px';
+  ctx.scale(dpr,dpr);
+  canvas.style.display='block';
+
+  const W=window.innerWidth;
+  const H=window.innerHeight;
+  const confettiCount=100;
+  const colors=['#667eea','#764ba2','#f093fb','#82c8ff','#ffd700','#ff6b6b','#4ecdc4','#ffe66d'];
+  let confetti=[];
+  let startTime=performance.now();
+  const duration=2500;
+
+  class Confetti{
+    constructor(){
+      this.x=Math.random()*W;
+      this.y=-Math.random()*H*.5-H*.2;
+      this.w=Math.random()*8+4;
+      this.h=this.w*.6;
+      this.color=colors[Math.random()*colors.length|0];
+      this.vx=(Math.random()-.5)*3;
+      this.vy=Math.random()*2+3;
+      this.rot=Math.random()*6.28;
+      this.rotV=(Math.random()-.5)*.15;
+      this.oscV=Math.random()*.03+.02;
+      this.oscD=Math.random()*20+10;
+      this.phase=Math.random()*6.28;
+    }
+    update(dt){
+      const speed=dt*.06;
+      this.x+=this.vx*speed+Math.sin(this.phase)*this.oscD*.01*speed;
+      this.y+=this.vy*speed;
+      this.rot+=this.rotV*speed;
+      this.phase+=this.oscV*speed;
+      this.vy+=.03*speed;
+      if(this.y>H+20){
+        this.y=-20;
+        this.x=Math.random()*W;
+        this.vy=Math.random()*2+3;
+      }
+    }
+    draw(){
+      ctx.save();
+      ctx.translate(this.x,this.y);
+      ctx.rotate(this.rot);
+      ctx.fillStyle=this.color;
+      ctx.fillRect(-this.w*.5,-this.h*.5,this.w,this.h);
+      ctx.restore();
+    }
+  }
+
+  for(let i=0;i<confettiCount;i++)confetti.push(new Confetti());
+
+  function animate(now){
+    const elapsed=now-startTime;
+    if(elapsed>=duration){
+      ctx.clearRect(0,0,W,H);
+      canvas.style.display='none';
+      confetti=null;
+      return;
+    }
+
+    const dt=now-(animate.last||now);
+    animate.last=now;
+
+    ctx.clearRect(0,0,W,H);
+
+    for(let i=0;i<confetti.length;i++){
+      confetti[i].update(dt);
+      confetti[i].draw();
+    }
+
+    requestAnimationFrame(animate);
+  }
+
+  animate.last=0;
+  requestAnimationFrame(animate);
+}
+
+async function submit(){
+  const btn=document.getElementById('submitBtn');
+  btn.disabled=true;btn.classList.add('loading');
+  const webhookUrl=document.getElementById('webhookPreview').textContent;
+  if(!webhookUrl.startsWith('http')){showDialog('❌','请先填写 n8n 地址');btn.disabled=false;btn.classList.remove('loading');return;}
+  if(images.length===0){showDialog('❌','请至少上传一张产品图');btn.disabled=false;btn.classList.remove('loading');return;}
+  const payload={
+    _urlType:getDropdownValue('dd-webhookType'),
+    路径:document.getElementById('webhookPath').value,
+    产品名称:document.getElementById('productName').value,
+    产品介绍:document.getElementById('productDesc').value,
+    产品图:images,
+    模特选择:[getDropdownValue('dd-model')],
+    语言选择:['英语'],
+    字体:['AcuminVariableConcept'],
+    品牌:document.getElementById('brand').value,
+    品牌风格:getDropdownValue('dd-brandStyle'),
+    成片时长:parseInt(getDropdownValue('dd-duration'))||15,
+    背景:getDropdownValue('dd-background'),
+    视频比例:getDropdownValue('dd-videoRatio'),
+  };
+  try{
+    const controller=new AbortController();
+    const timeout=setTimeout(()=>controller.abort(),30000);
+    const resp=await fetch(webhookUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:controller.signal});
+    clearTimeout(timeout);
+    if(resp.ok){
+      showDialog('✅','提交成功！视频生成中');
+    }else{
+      const text=await resp.text().catch(()=>'');
+      showDialog('❌','提交失败：HTTP '+resp.status+(text?' - '+text.slice(0,100):''));
+    }
+  }catch(e){
+    if(e.name==='AbortError'){
+      showDialog('❌','连接超时，请检查 n8n 是否在运行');
+    }else{
+      showDialog('❌','网络错误：'+e.message);
+    }
+  }
+  btn.disabled=false;btn.classList.remove('loading');
+}
+</script>
+</body></html>

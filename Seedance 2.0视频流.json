@@ -1,0 +1,999 @@
+{
+  "name": "Kevin Banana - Image to Video",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "kevin-banana-video",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -31584,
+        14928
+      ],
+      "id": "3dface1e-5ddd-49e3-a3f9-c41165a77de5",
+      "name": "Webhook",
+      "webhookId": "video-webhook-001"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body || $input.first().json;\nconst durMap = { 15: { shots: 3, segments: 1, label: '15秒标准款' }, 25: { shots: 4, segments: 2, label: '25秒展示款' } };\nconst duration = parseInt(body.成片时长) || 15;\nconst shotPlan = durMap[duration] || durMap[15];\nconst config = {\n  '类型': body._urlType || 'webhook-test',\n  '路径': body.路径 || 'kevin-banana-video',\n  '产品名称': body.产品名称 || '',\n  '产品介绍': body.产品介绍 || '',\n  '产品图': body.产品图 || [],\n  '参考视频': body.参考视频 || '',\n  '模特选择': body.模特选择 || ['女性'],\n  '语言选择': body.语言选择 || ['英语'],\n  '字体': body.字体 || ['AcuminVariableConcept'],\n  '品牌': body.品牌 || '',\n  '品牌风格': body.品牌风格 || 'ZARA/COS极简',\n  '背景': body.背景 || '纯白摄影棚',\n  '成片时长': duration,\n  '总分镜数': shotPlan.shots,\n  'Seedance分段数': shotPlan.segments,\n  'seedance_model': 'doubao-seedance-2.0-fast',\n  'seedance_fps': 24,\n  'seedance_motion': 1.5,\n  'seedance_seed': Math.floor(Math.random() * 2147483647),\n  '运镜类型': body.运镜类型 || '自动'\n};\nreturn { json: { _config: config, _images: config.产品图, _refVideo: config.参考视频, _raw: body } };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -31360,
+        14928
+      ],
+      "id": "9e31398e-580f-4055-a704-2cc3677fa8a0",
+      "name": "入参标准化"
+    },
+    {
+      "parameters": {
+        "jsCode": "const images = $input.first().json._images || [];\nconst items = [];\nfor (let i = 0; i < images.length; i++) {\n  const img = images[i];\n  if (img.startsWith('data:')) {\n    const match = img.match(/data:([^;]+);base64,(.+)/);\n    if (match) {\n      items.push({\n        json: { index: i, type: 'base64', mime: match[1] },\n        binary: { data: { data: match[2], mimeType: match[1] } }\n      });\n    }\n  } else if (img.startsWith('http')) {\n    items.push({ json: { index: i, type: 'url', url: img } });\n  }\n}\nreturn items;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -31136,
+        14928
+      ],
+      "id": "840828b7-e00e-4362-9d87-81a559bce1b1",
+      "name": "提取图片"
+    },
+    {
+      "parameters": {
+        "operation": "uploadFile",
+        "additionalFieldsFile": {}
+      },
+      "type": "n8n-nodes-cloudinary.cloudinary",
+      "typeVersion": 1,
+      "position": [
+        -30912,
+        14928
+      ],
+      "id": "cbbab4a7-c472-4f50-8a6c-d99d7b267e2c",
+      "name": "格式转化",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "credentials": {
+        "cloudinaryApi": {
+          "id": "EqYLWbASKKOJCikW",
+          "name": "Cloudinary account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst urls = [];\nfor (let i = 0; i < items.length; i++) {\n  const json = items[i].json;\n  if (json.secure_url) {\n    urls.push({ index: json.index != null ? json.index : i, url: json.secure_url });\n  } else if (json.url) {\n    urls.push({ index: json.index != null ? json.index : i, url: json.url });\n  }\n}\nreturn urls.map(u => ({ json: u }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -30688,
+        14928
+      ],
+      "id": "9c690ac6-3baa-422a-bbfc-b92bd07b4df7",
+      "name": "提取URL"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "gpt-4o"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        -30168,
+        15152
+      ],
+      "id": "d4e407eb-1286-4ae0-8292-acaa7efcb364",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "58zLMA0wxwoGzboO",
+          "name": "OpenAI Rudman"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 20
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -25824,
+        14756
+      ],
+      "id": "42f983d6-90e4-4f49-89d4-99c25061f546",
+      "name": "等待20秒",
+      "webhookId": "e07b097e-3c9c-4066-a925-53da79715c70"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apiyi.com/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n    \"model\": \"gpt-4o\",\n    \"messages\": [\n        {\n            \"role\": \"user\",\n            \"content\": [\n                {\n                    \"type\": \"text\",\n                    \"text\": \"You are a product visual analyst. Based solely on the uploaded product image, describe the product appearance in concise English for use in an image generation prompt. Cover: shape, color, material, surface texture, structural details, proportions, and any distinctive design features. Do NOT guess functions or materials not visible. Do NOT write marketing copy. Output plain visual description only, under 120 words. Product: {{ $('入参标准化').first().json._config['产品名称'] }}. {{ $('入参标准化').first().json._config['产品介绍'] }}\"\n                },\n                {\n                    \"type\": \"image_url\",\n                    \"image_url\": {\n                        \"url\": \"{{ $json.url }}\"\n                    }\n                }\n            ]\n        }\n    ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -30464,
+        14928
+      ],
+      "id": "8f2dd3b3-0b87-4af6-ba52-96364fed391e",
+      "name": "分析产品图",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "9ityrgpFmBVYcgF5",
+          "name": "Rudman"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=为以下产品设计一支时装lookbook的分镜脚本。背景为 {{ $('入参标准化').first().json._config['背景'] || '纯白摄影棚' }}。全片由 Seedance 2.0 延长功能连续生成——第一段从关键帧出发，后续每段基于上一段视频延长。\n\n产品：{{ $('入参标准化').first().json._config['产品名称'] }}\n描述：{{ $('入参标准化').first().json._config['产品介绍'] }}\n品牌：{{ $('入参标准化').first().json._config['品牌'] }}\n品牌风格：{{ $('入参标准化').first().json._config['品牌风格'] || 'ZARA/COS极简' }}\n背景：{{ $('入参标准化').first().json._config['背景'] || '纯白摄影棚' }}\n模特类型：{{ $('入参标准化').first().json._config['模特选择'][0] || '女性' }}\n成片时长：{{ $('入参标准化').first().json._config['成片时长'] || 15 }}秒\n总分镜数：{{ $('入参标准化').first().json._config['总分镜数'] || 3 }}个\n产品视觉分析：{{ $('分析产品图').first().json.choices[0].message.content }}\n产品参考图：{{ $items('提取URL').map(i => i.json.url).join(', ') }}\n\n=== 任务 ===\n设计一支 {{ $('入参标准化').first().json._config['成片时长'] || 15 }}秒的 lookbook 分镜脚本。全片使用 Seedance 2.0 视频延长功能逐段生成——关键帧 → 第一段视频 → 延长第二段 → 延长第三段...形成一条连续流畅的视频。\n\n=== 分镜节奏（标准模板） ===\n按成片时长自动适配：\n- 15秒（3个分镜）：开场（5s）→ 整体展示（5s）→ 结尾定格（5s）\n- 25秒（4个分镜）：开场（5s）→ 整体展示（7s）→ 细节特写（7s）→ 结尾定格（6s）\n\n=== 分镜设计原则 ===\n1. 每个分镜 ≥ 4秒，按上述模板分配时长\n2. 开场：建立氛围——模特入画、正面全身、缓慢推近\n3. 整体展示：服装完整呈现——45°侧身、缓慢环绕、面料垂坠\n4. 细节特写：服装细节——面料肌理、缝线、领口/袖口特写，极慢微距\n5. 结尾定格：收束——静态优雅pose、缓慢拉远或静止\n6. 模特为数字人分身，面部清晰可见，表情自然高级\n7. 服装是主角，但与模特的面部表现相辅相成——版型、垂坠、面料细节\n8. 背景处理：{{ $('入参标准化').first().json._config['背景'] || '纯白摄影棚' }} — 纯白摄影棚 = 干净极简纯白 / 模糊沙滩 = 浅景深虚化、暖金色调、焦外散景(bokeh)、模特清晰锐利\n9. 每段 ending pose 自然引出下一段 opening——Seedance 会自动生成 2-3 秒无缝过渡\n\n=== 运镜方式 ===\n- 缓慢推近（slow_push_in）\n- 缓慢环绕（slow_orbit）\n- 极慢上摇（slow_tilt_up）\n- 微距推入（macro_push_in）\n- 静态跟焦（static_follow）\n\n仅输出合法 JSON（不含 markdown 代码块）：\n{\n  \"videoTitle\": \"中文片名\",\n  \"videoTitleEnglish\": \"English title\",\n  \"brandStyle\": \"品牌风格\",\n  \"totalDuration\": 15,\n  \"totalShots\": 3,\n  \"storyboards\": [\n    {\n      \"scene_id\": 1,\n      \"duration_seconds\": 5,\n      \"shot_type\": \"opening | full_display | detail_closeup | walking_action | ending_pose\",\n      \"visual_description_cn\": \"该分镜的中文画面描述（模特姿态、构图、服装重点）\",\n      \"video_prompt\": \"该分镜的中文视频运镜提示词。200词以内。根据选定背景风格描述画面，纯白摄影棚 = 纯白柔光极简 / 模糊沙滩 = 浅景深焦外散景暖金色调。\",\n      \"camera_movement\": \"slow_push_in | slow_orbit | slow_tilt_up | macro_push_in | static_follow\"\n    }\n  ]\n}",
+        "options": {
+          "systemMessage": "=# 角色\n你是国际时装品牌的创意总监。你设计时装lookbook展示的分镜脚本。背景风格由用户选择（纯白摄影棚或模糊沙滩等），按需适配。全片通过 Seedance 2.0 视频延长功能逐段生成——关键帧出发 → 延长 → 延长，形成一条连续流畅的完整视频。\n\n# 成片规格\n仅支持主流商业成片时长，不做60秒以上长视频：\n- 15秒 = 3个分镜（开场→整体展示→结尾定格）\n- 25秒 = 4个分镜（开场→整体展示→细节特写→结尾定格）\n单分镜时长 ≥ 4秒。按成片时长自动适配分镜数量和节奏。\n\n# 美学\n- 背景由用户选择（纯白摄影棚 / 模糊沙滩），按需适配美学\n- 服装是绝对主角——版型、垂坠、面料细节。模特面部作为气质载体，与服装协调\n- 模特：数字人分身，面部清晰自然。身体与面部共同展示服装气质\n- 姿态：自然、松弛、现代\n- 节奏：缓慢、呼吸感、凝神静气\n\n# Seedance 2.0 延长机制\n- 每段生成时会分析上一段视频的最后 10 帧（运动轨迹、光影、场景、人物特征）\n- 核心关键帧作为全局风格锚点贯穿所有分段，保持视觉一致性\n- Seedance 自动在段间生成 2-3 秒无缝过渡\n- 连续 3 次延长（45s）风格一致性 ≥92%，连续 5 次（75s）≥85%\n- 请为每段设计自然流动的 ending pose，以便过渡流畅\n\n# 分镜设计\n- 角度递进：整体→侧面→背面→细节\n- 运动连续、姿态自然过渡\n- 不要设计跳切——Seedance 会平滑过渡\n\n# 输出\nJSON，含 storyboards 数组。video_prompt 字段用中文（Seedance 2.0 中文效果更好、Token 更省），其余用中文。"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        -30240,
+        14928
+      ],
+      "id": "6bc738d3-5df0-41d4-b1e4-f8b81d3a21f2",
+      "name": "Storyboard Designer",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "jsCode": "const output = $input.first().json.output;\nlet parsed;\ntry { parsed = JSON.parse(output); } catch {\n  const m = output.match(/```(?:json)?\\s*([\\s\\S]*?)```/);\n  if (m) parsed = JSON.parse(m[1]);\n  else { const o = output.match(/\\{[\\s\\S]*\\}/); if (o) parsed = JSON.parse(o[0]); }\n}\nif (!parsed || !Array.isArray(parsed.storyboards) || !parsed.storyboards.length)\n  throw new Error('Storyboard JSON must contain non-empty storyboards array');\nreturn { json: parsed };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -29888,
+        14928
+      ],
+      "id": "b74c3c9f-f385-4f00-b695-ab77f69d4bb2",
+      "name": "解析全局分镜"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=为以下lookbook视频设计开场关键帧的生成提示词。\n\n产品：{{ $(\"入参标准化\").first().json._config[\"产品名称\"] }}\n品牌风格：{{ $(\"入参标准化\").first().json._config[\"品牌风格\"] || \"ZARA/COS极简\" }}\n模特类型：{{ $(\"入参标准化\").first().json._config[\"模特选择\"][0] }}\n产品视觉分析：{{ $(\"分析产品图\").first().json.choices[0].message.content }}\n产品参考图：{{ $items(\"提取URL\").map(i => i.json.url).join(\", \") }}\n\n第一个分镜的描述：{{ $(\"解析全局分镜\").first().json.storyboards[0].visual_description_cn }}\n\n=== 任务 ===\n写一段英文生图提示词（150词以内），用于生成整个lookbook视频的开场关键帧。\n\n=== 要求 ===\n- 背景适配：纯白摄影棚 = 纯白背景、柔光、极简 | 模糊沙滩 = 沙滩全虚化、浅景深(shallow depth of field)、bokeh、暖金色调、仅模特清晰锐利\n- 模特面部清晰自然，气质高级\n- 模特双手自然垂放或轻插口袋，手中不持任何无关物品（手机、包、花束、道具一律禁止），除非是产品本身自带的配饰\n- 服装是绝对主角——版型、面料、细节。模特面部作为气质载体\n- 16:9 横构图，留出呼吸空间\n- 4K、photorealistic、editorial fashion photography\n- {{ $(\"入参标准化\").first().json._config[\"品牌风格\"] || \"ZARA/COS极简\" }} 风格",
+        "options": {
+          "systemMessage": "=# 角色\n你是国际时装品牌的创意总监。你设计lookbook视频的核心关键帧——全片第一帧，所有后续内容由 Seedance 从此帧延长生成。\n\n# 美学\n- 背景由用户选择。纯白摄影棚 = 极简干净 / 模糊沙滩 = 浅景深沙滩虚化、bokeh、暖金色调\n- 服装是绝对主角，模特面部作为气质载体\n- 模特面部清晰自然、气质高级\n- 模特双手自然放松，不持任何无关道具\n- 极简构图，充沛留白\n- 16:9、photorealistic、杂志大片品质\n\n# 输出\n150词以内。英文生图提示词。纯文本，无JSON，无markdown。"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        -29664,
+        14928
+      ],
+      "id": "b5795db8-5f51-4284-83bd-066689d75877",
+      "name": "Poster Designer",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "jsCode": "const posterPrompt = $input.first().json.output || \"\";\nconst imageItems = $items(\"提取URL\");\nconst refImages = [];\nfor (const item of imageItems) {\n  if (item.json.url) refImages.push({ url: item.json.url });\n}\nconst body = {\n  model: \"seedream-5-0-260128\",\n  prompt: posterPrompt,\n  size: \"1792x1024\",\n  response_format: \"url\"\n};\nif (refImages.length) body.reference_images = refImages;\nreturn { json: body };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -29312,
+        14928
+      ],
+      "id": "67edc302-f8df-437d-930b-03b19eabeed7",
+      "name": "构建关键帧请求"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://ark.cn-beijing.volces.com/api/plan/v3/images/generations",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -29088,
+        14928
+      ],
+      "id": "f151dfb9-f1e1-4382-8847-2c9c244e0798",
+      "name": "生成关键帧",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "2IeLsPBL3gwPn7IW",
+          "name": "Seedance 2.0"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const resp = $input.first().json;\n// Volcengine images/generations format: { data: [{ url: '...' }] }\nif (resp.data && Array.isArray(resp.data) && resp.data[0]?.url) {\n  return { json: { keyframeUrl: resp.data[0].url } };\n}\n// Fallback: OpenAI chat completions format\nconst content = resp.choices?.[0]?.message?.content;\nif (content) {\n  const urlMatch = content.match(/!\\[image\\]\\((https?:\\/\\/[^)]+)\\)/);\n  if (urlMatch) return { json: { keyframeUrl: urlMatch[1] } };\n  const b64Match = content.match(/data:image\\/(\\w+);base64,([^)\\s]+)/);\n  if (b64Match) {\n    return { json: { keyframeMime: 'image/' + b64Match[1] },\n      binary: { data: { data: b64Match[2], mimeType: 'image/' + b64Match[1] } } };\n  }\n}\nthrow new Error('Could not extract image from response: ' + JSON.stringify(resp).slice(0, 500));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -28864,
+        14928
+      ],
+      "id": "c31bf875-1e5e-49d2-8cfb-2a5fb7de4f8d",
+      "name": "提取关键帧"
+    },
+    {
+      "parameters": {
+        "operation": "uploadFile",
+        "additionalFieldsFile": {}
+      },
+      "type": "n8n-nodes-cloudinary.cloudinary",
+      "typeVersion": 1,
+      "position": [
+        -28640,
+        14928
+      ],
+      "id": "e00d5732-76f6-41dc-a522-c44d0e3f6e9f",
+      "name": "上传关键帧",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "credentials": {
+        "cloudinaryApi": {
+          "id": "EqYLWbASKKOJCikW",
+          "name": "Cloudinary account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "url": "={{ $('上传关键帧').first().json.secure_url || $('上传关键帧').first().json.url || $('提取关键帧').first().json.keyframeUrl }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          },
+          "timeout": 60000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -28416,
+        14928
+      ],
+      "id": "a6f9a978-7883-422f-b914-862a4380152b",
+      "name": "下载关键帧",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "=C:/n8n-output/keyframe_{{ $('入参标准化').first().json._config['产品名称'] || 'product' }}_{{ new Date().toISOString().slice(0,10) }}.png",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        -28192,
+        14928
+      ],
+      "id": "cb05b2b4-880c-4fcc-835e-c00b441ebfe0",
+      "name": "保存关键帧",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "jsCode": "// Derive Seedance segments from storyboard + total duration\nconst storyboard = $('解析全局分镜').first().json;\nconst totalDuration = storyboard.totalDuration || 15;\nconst shots = storyboard.storyboards || [];\n\nlet segments = [];\n\nif (totalDuration <= 15) {\n  // 15s = 1 segment, no extension\n  segments = [{\n    segment_id: 1,\n    duration: 15,\n    is_extension: false,\n    shots_covered: shots.map(s => s.scene_id),\n    shot_types: shots.map(s => s.shot_type),\n    visual_summary: shots.map(s => '[Shot ' + s.scene_id + ': ' + s.shot_type + '] ' + s.visual_description_cn).join(' | '),\n    camera_movement: shots[0].camera_movement || 'slow_push_in',\n    storyboard_shots: shots\n  }];\n} else {\n  // 25s = 15s base + 10s extension\n  const mid = Math.ceil(shots.length / 2);\n  segments = [\n    {\n      segment_id: 1, duration: 15, is_extension: false,\n      shots_covered: shots.slice(0, mid).map(s => s.scene_id),\n      shot_types: shots.slice(0, mid).map(s => s.shot_type),\n      visual_summary: shots.slice(0, mid).map(s => '[Shot ' + s.scene_id + ': ' + s.shot_type + '] ' + s.visual_description_cn).join(' | '),\n      camera_movement: shots[0].camera_movement || 'slow_push_in',\n      storyboard_shots: shots.slice(0, mid)\n    },\n    {\n      segment_id: 2, duration: 10, is_extension: true,\n      shots_covered: shots.slice(mid).map(s => s.scene_id),\n      shot_types: shots.slice(mid).map(s => s.shot_type),\n      visual_summary: shots.slice(mid).map(s => '[Shot ' + s.scene_id + ': ' + s.shot_type + '] ' + s.visual_description_cn).join(' | '),\n      camera_movement: shots.slice(mid)[0]?.camera_movement || 'slow_orbit',\n      storyboard_shots: shots.slice(mid)\n    }\n  ];\n}\n\nreturn segments.map(seg => ({\n  json: {\n    ...storyboard,\n    ...seg,\n    totalSegments: segments.length\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -27968,
+        14928
+      ],
+      "id": "5653a080-e7d5-4ddb-a092-9e7dacefb004",
+      "name": "规划Seedance分段"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -27744,
+        14928
+      ],
+      "id": "00b69c0c-13c5-438f-aa1e-d618b315941f",
+      "name": "Loop Over Seedance Segments"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=为该 Seedance 视频段写一段视频生成提示词。背景：{{ $('入参标准化').first().json._config['背景'] || '纯白摄影棚' }}。\n\n=== 当前段 ===\n段ID：{{ $('Loop Over Seedance Segments').item.json.segment_id }} / {{ $('Loop Over Seedance Segments').item.json.totalSegments }}\n段时长：{{ $('Loop Over Seedance Segments').item.json.duration }}秒\n段类型：{{ $('Loop Over Seedance Segments').item.json.is_extension ? '延长段（基于上一段视频末尾延长）' : '基础段（从关键帧出发）' }}\n=== 本段覆盖的分镜 ===\n{{ $('Loop Over Seedance Segments').item.json.storyboard_shots.map(s => '- 分镜 ' + s.scene_id + '（' + s.duration_seconds + 's, ' + s.shot_type + ', ' + s.camera_movement + '）: ' + s.visual_description_cn).join('\\n') }}\n\n=== 产品信息 ===\n产品：{{ $('入参标准化').first().json._config['产品名称'] }}\n产品视觉分析：{{ $('分析产品图').first().json.choices[0].message.content }}\n背景：{{ $('入参标准化').first().json._config['背景'] || '纯白摄影棚' }}\n\n=== 规则 ===\n1. 严格200词以内。中文。\n2. 按分镜拆解时序：每个分镜标注起止时间（如 0-5s: ... | 5-10s: ... | 10-15s: ...），描述对应的镜头运动和画面\n3. {{ $('Loop Over Seedance Segments').item.json.is_extension ? '这是延长段——基于上一段视频末尾自动延长2-3秒过渡，然后进入本段分镜序列' : '这是基础段——从关键帧出发，按分镜序列依次推进' }}\n4. 每个分镜使用其指定的 camera_movement，分镜之间自然过渡，不跳切\n5. 重点描述服装的展现——版型、面料、细节\n6. 背景：{{ $('入参标准化').first().json._config['背景'] || '纯白摄影棚' }}。纯白摄影棚 = 纯白不变、柔光均匀。模糊沙滩 = 沙滩全虚化、浅景深、bokeh、暖金色调、模特清晰锐利、背景完全不需细节。\n7. 模特面部清晰可见，表情自然克制\n8. 节奏缓慢、漂浮、水下般\n9. 结尾：4K、photorealistic、editorial fashion lookbook\n10. 仅输出带 videoPrompt 字段的 JSON（中文）。",
+        "options": {
+          "systemMessage": "=# 角色\n你是时装lookbook影片的摄影师。你为 Seedance 2.0 写视频运镜提示词。背景风格由用户选择，缓慢克制的镜头运动。\n\n# Seedance 2.0 延长机制\n- 第一段：从关键帧出发，生成首段视频\n- 后续段：分析上一段最后 10 帧（运动轨迹、光影、场景、人物）→ 参考关键帧作为全局风格锚点 → 自动生成 2-3 秒无缝过渡 → 输出延长后的完整视频\n- 关键帧全程贯穿——它是全局风格锚点，确保所有分段视觉一致\n- 连续 3 次延长（45s）风格一致性 ≥92%，连续 5 次（75s）≥85%\n\n# 提示词结构\n必须按分镜拆分时序，每个分镜标注起止时间、镜头运动、画面内容：\n```\n0-5s: [camera_movement] [shot_type - 分镜1描述]\n5-10s: [camera_movement] [shot_type - 分镜2描述]\n10-15s: [camera_movement] [shot_type - 分镜3描述]\n```\n分镜之间自然过渡，不跳切。每个时间段严格等于对应分镜的 duration_seconds。\n\n# 镜头运动\n- slow_push_in：从全身缓慢推入至中景\n- slow_orbit：轻柔环绕展示侧面版型\n- slow_tilt_up：极慢上摇展示背面或全身\n- macro_push_in：超慢微距推入面料肌理\n- static_follow：静态跟焦，模特缓慢转身\n- slow_push_out：缓慢拉远，全景收束\n\n# 美学\n根据背景选择适配。纯白摄影棚 = 纯白背景、柔光、极简 / 模糊沙滩 = 浅景深沙滩虚化、bokeh、暖金色调、服装清晰锐利\n\n# 输出\nJSON：{\"videoPrompt\": \"全中文。200词以内。按分镜时序拆解。4K、photorealistic、editorial fashion film。\"}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        -27520,
+        14528
+      ],
+      "id": "ccad9e96-7e77-41fb-a193-ed074ba8be9d",
+      "name": "Storyboard VideoDesignAgent",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "jsCode": "const output = $input.first().json.output;\nlet parsed;\ntry { parsed = JSON.parse(output); } catch {\n  const m = output.match(/```(?:json)?\\s*([\\s\\S]*?)```/);\n  if (m) parsed = JSON.parse(m[1]);\n  else { const o = output.match(/\\{[\\s\\S]*\\}/); if (o) parsed = JSON.parse(o[0]); }\n}\nif (!parsed || !parsed.videoPrompt) throw new Error('Failed to parse videoPrompt');\nreturn { json: { ...parsed, segment_id: $('Loop Over Seedance Segments').item.json.segment_id, is_extension: $('Loop Over Seedance Segments').item.json.is_extension, duration: $('Loop Over Seedance Segments').item.json.duration } };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -27168,
+        14632
+      ],
+      "id": "1c2262bc-6eb1-4db1-9d91-4d7b3e1eccd0",
+      "name": "解析分镜Prompt"
+    },
+    {
+      "parameters": {
+        "jsCode": "const videoPlan = $input.first().json;\nconst seg = $('Loop Over Seedance Segments').item.json;\nconst config = $('入参标准化').first().json._config;\nconst segmentId = seg.segment_id;\nconst totalSegs = $('Loop Over Seedance Segments').item.json.totalSegments;\nconst isExtension = seg.is_extension;\n\n// Build prompt: style lock prefix for extensions\nlet rawPrompt = videoPlan.videoPrompt || '时装lookbook镜头。缓慢推入、柔光摄影棚、纯白背景。4K、photorealistic。';\nif (isExtension) {\n  const styleLock = '风格锁定：与原始关键帧保持完全一致的视觉。相同模特外观、相同纯白摄影棚背景、相同柔和均匀光线、相同面料质感与服装细节品质。所有视觉参数锚定核心关键帧。';\n  rawPrompt = styleLock + rawPrompt;\n}\nconst prompt = String(rawPrompt).replace(/[\\x00-\\x1F\\x7F]/g, ' ').trim().slice(0, 2000);\nconst duration = seg.duration || 15;\n\n// Global style anchor: the core keyframe\nconst keyframeUrl = $('上传关键帧').first().json.secure_url || $('上传关键帧').first().json.url || $('提取关键帧').first().json.keyframeUrl || '';\n\n// Previous video URL from last loop iteration\nconst prevVideoUrl = $json.prevVideoUrl || '';\n\nconst content = [{ type: 'text', text: prompt }];\n\nif (!isExtension) {\n  // Base segment: generate from keyframe\n  content.push({ type: 'image_url', image_url: { url: keyframeUrl } });\n} else if (prevVideoUrl) {\n  // Extension: previous video for temporal continuity + keyframe as style anchor\n  content.push({ type: 'video_url', video_url: { url: prevVideoUrl } });\n  content.push({ type: 'image_url', image_url: { url: keyframeUrl } });\n  content.push({ type: 'text', text: `基于上一段视频的无缝延长。第 ${segmentId} of ${totalSegs}. 原始关键帧作为全局风格锚点。保持视觉一致性：相同模特外观、相同光线、相同纯白背景。自动生成2-3秒无缝过渡。` });\n}\n\nconst requestBody = {\n  model: config['seedance_model'] || 'doubao-seedance-2.0-fast',\n  content,\n  size: '720p',\n  ratio: '16:9',\n  duration,\n  fps: config['seedance_fps'] || 24,\n  motion_strength: config['seedance_motion'] || 1.5,\n  seed: config['seedance_seed'] || 42\n};\n\nreturn { json: { videoPrompt: prompt, keyframeUrl, prevVideoUrl, duration, segment_id: segmentId, totalSegments: totalSegs, is_extension: isExtension, body: requestBody } };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -26944,
+        14632
+      ],
+      "id": "9a273158-e5cd-4dbf-9578-87389a07d44d",
+      "name": "构建分镜视频请求"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://ark.cn-beijing.volces.com/api/plan/v3/contents/generations/tasks",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.body }}",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -26720,
+        14632
+      ],
+      "id": "001c2727-56f7-4900-a2e7-de64dbc28a21",
+      "name": "提交分镜视频任务",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "2IeLsPBL3gwPn7IW",
+          "name": "Seedance 2.0"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const resp = $input.first().json;\nconst id = resp.id || resp.task_id || resp.data?.task_id || '';\nif (!id) throw new Error('No task ID in response');\nreturn { json: { task_id: id, segment_id: $('Loop Over Seedance Segments').item.json.segment_id, _retryCount: 0, prevVideoUrl: $json.prevVideoUrl || '' } };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -26496,
+        14632
+      ],
+      "id": "8ec4233e-6037-43b7-a333-f7b8a655222b",
+      "name": "提取分镜视频ID"
+    },
+    {
+      "parameters": {
+        "url": "=https://ark.cn-beijing.volces.com/api/plan/v3/contents/generations/tasks/{{ $json.task_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -26272,
+        14632
+      ],
+      "id": "e802b28b-5318-4ebf-833b-864ddec83add",
+      "name": "查询分镜视频状态",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "2IeLsPBL3gwPn7IW",
+          "name": "Seedance 2.0"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "666ff76a-5637-4638-96db-3102db7cb342",
+              "leftValue": "={{ $json.status || $json.data?.status || '' }}",
+              "rightValue": "succeeded",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "67db39d9-c849-4f6f-8f3f-f39c01fd4978",
+              "leftValue": "={{ $json.status || $json.data?.status || '' }}",
+              "rightValue": "completed",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -26048,
+        14560
+      ],
+      "id": "d5f02168-a6cd-4280-8036-56708064efe8",
+      "name": "判断分镜状态"
+    },
+    {
+      "parameters": {
+        "jsCode": "const resp = $input.first().json;\nconst url = resp.video_url || resp.output?.video_url || resp.result?.video_url || resp.data?.video_url || resp.content?.video_url || '';\nconst status = resp.status || resp.data?.status || '';\nif (status !== 'succeeded' && status !== 'completed') throw new Error('Video not ready');\nif (!url) throw new Error('No video URL in response');\nconst sceneId = $json.scene_id ?? $('Loop Over Seedance Segments').item.json.segment_id;\nreturn { json: { video_url: url, scene_id: sceneId, status, prevVideoUrl: url } };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -25824,
+        14512
+      ],
+      "id": "d9facd9a-e197-4f90-91f7-4add6266d90a",
+      "name": "提取分镜视频URL"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.video_url }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          },
+          "timeout": 300000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -27456,
+        14928
+      ],
+      "id": "956dfa57-74a7-44a0-b1db-bf631e4c6350",
+      "name": "下载完整视频",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first();\nconst seg = $('Loop Over Seedance Segments').item.json;\nconst segmentId = seg.segment_id;\nconst totalSegs = seg.totalSegments || $('Loop Over Seedance Segments').item.json.totalSegments;\nconst videoUrl = input.json.video_url || input.json.prevVideoUrl || '';\nreturn { json: { segment_id: segmentId, video_url: videoUrl, prevVideoUrl: videoUrl, completed: true, isLast: segmentId >= totalSegs } };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -25600,
+        14852
+      ],
+      "id": "e57f8e4b-e4d1-45b8-913c-bf737459acd0",
+      "name": "分段完成"
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "=C:/n8n-output/{{ $('入参标准化').first().json._config['产品名称'] || 'final' }}_{{ new Date().toISOString().slice(0,10) }}.mp4",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        -27168,
+        14928
+      ],
+      "id": "6dbb1a60-cd37-4c3e-9f36-e0f4ebe98100",
+      "name": "保存最终视频",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "id"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        -29592,
+        15152
+      ],
+      "id": "8768bbbf-d2f3-4cab-89bc-553b9d330d67",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "58zLMA0wxwoGzboO",
+          "name": "OpenAI Rudman"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "id"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        -27448,
+        14752
+      ],
+      "id": "14f4884b-63cb-4171-a4a7-735fd385df91",
+      "name": "OpenAI Chat Model2",
+      "credentials": {
+        "openAiApi": {
+          "id": "58zLMA0wxwoGzboO",
+          "name": "OpenAI Rudman"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "入参标准化",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "入参标准化": {
+      "main": [
+        [
+          {
+            "node": "提取图片",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "提取图片": {
+      "main": [
+        [
+          {
+            "node": "格式转化",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "格式转化": {
+      "main": [
+        [
+          {
+            "node": "提取URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "提取URL": {
+      "main": [
+        [
+          {
+            "node": "分析产品图",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "分析产品图": {
+      "main": [
+        [
+          {
+            "node": "Storyboard Designer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Storyboard Designer": {
+      "main": [
+        [
+          {
+            "node": "解析全局分镜",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "解析全局分镜": {
+      "main": [
+        [
+          {
+            "node": "Poster Designer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "构建关键帧请求": {
+      "main": [
+        [
+          {
+            "node": "生成关键帧",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "生成关键帧": {
+      "main": [
+        [
+          {
+            "node": "提取关键帧",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "提取关键帧": {
+      "main": [
+        [
+          {
+            "node": "上传关键帧",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "上传关键帧": {
+      "main": [
+        [
+          {
+            "node": "下载关键帧",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Storyboard VideoDesignAgent": {
+      "main": [
+        [
+          {
+            "node": "解析分镜Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "解析分镜Prompt": {
+      "main": [
+        [
+          {
+            "node": "构建分镜视频请求",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "构建分镜视频请求": {
+      "main": [
+        [
+          {
+            "node": "提交分镜视频任务",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "提交分镜视频任务": {
+      "main": [
+        [
+          {
+            "node": "提取分镜视频ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "提取分镜视频ID": {
+      "main": [
+        [
+          {
+            "node": "查询分镜视频状态",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "查询分镜视频状态": {
+      "main": [
+        [
+          {
+            "node": "判断分镜状态",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "判断分镜状态": {
+      "main": [
+        [
+          {
+            "node": "提取分镜视频URL",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "等待20秒",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "提取分镜视频URL": {
+      "main": [
+        [
+          {
+            "node": "分段完成",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "等待20秒": {
+      "main": [
+        [
+          {
+            "node": "查询分镜视频状态",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Storyboard Designer",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Seedance Segments": {
+      "main": [
+        [
+          {
+            "node": "下载完整视频",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Storyboard VideoDesignAgent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "分段完成": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Seedance Segments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "规划Seedance分段": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Seedance Segments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "下载完整视频": {
+      "main": [
+        [
+          {
+            "node": "保存最终视频",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "下载关键帧": {
+      "main": [
+        [
+          {
+            "node": "保存关键帧",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "保存关键帧": {
+      "main": [
+        [
+          {
+            "node": "规划Seedance分段",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Poster Designer": {
+      "main": [
+        [
+          {
+            "node": "构建关键帧请求",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Poster Designer",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Storyboard VideoDesignAgent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "b28d4080-de2b-431d-8c22-d29ea3a43d97",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "135084b3bb7274c527a366d848e674d33b72d6fe177419deba5bad666702a0e3"
+  },
+  "id": "z4qwosFPYWNWRGpR",
+  "tags": []
+}
