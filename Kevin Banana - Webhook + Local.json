@@ -1,0 +1,1666 @@
+{
+  "name": "Kevin Banana - Webhook + Local",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "kevin-banana",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        84736,
+        50400
+      ],
+      "id": "6cd3283d-f436-4b08-9d6b-cde88f353d73",
+      "name": "Webhook",
+      "webhookId": "lnoye9sp3ih"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "gpt-4o"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        86504,
+        50624
+      ],
+      "id": "3f8dee7c-f9f1-47b0-bc12-adaf02b6af41",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "O1MIpCF5JXk47KtA",
+          "name": "OpenAI anson"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "deepseek-v4-pro",
+        "options": {
+          "timeout": 300000
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatDeepSeek",
+      "typeVersion": 1,
+      "position": [
+        86856,
+        50624
+      ],
+      "id": "fa918fcf-06a3-4643-a28a-ac637dd7ca89",
+      "name": "DeepSeek Chat Model",
+      "credentials": {
+        "deepSeekApi": {
+          "id": "WNiD2QTzOq9JdMSN",
+          "name": "DeepSeek anson"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "text": "={{ $json.output['Gallery Image Plan'] }}",
+        "schemaType": "fromJson",
+        "jsonSchemaExample": "{\n\t\"state\": \"California\",\n\t\"output\": [\"Los Angeles\", \"San Francisco\", \"San Diego\"],\n    \"name\":[\"副图1\",\"副图2\"]\n}",
+        "options": {
+          "systemPromptTemplate": "=You MUST output ALL content in {{ $('入参标准化').first().json._config['语言选择'] }}. Absolutely NO Chinese under any circumstances. Extract every gallery image plan from the input. The output field must be an array of plain text strings only — each element is the full description text for one gallery image. No JSON objects, no labels, no formatting markup. The name field must contain only the index numbers (e.g. 副图1, 副图2)."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.informationExtractor",
+      "typeVersion": 1.2,
+      "position": [
+        87136,
+        50400
+      ],
+      "id": "e5fe0185-ff9f-4e0d-a433-d3fb49fa0970",
+      "name": "Information Extractor1",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "text": "={{ $json.output['A+ Content Structure'] }}",
+        "schemaType": "fromJson",
+        "jsonSchemaExample": "{\n\t\"state\": \"California\",\n\t\"output\": [\"Los Angeles\", \"San Francisco\", \"San Diego\"],\n    \"name\":[\"A+1\",\"A+2\"]\n}",
+        "options": {
+          "systemPromptTemplate": "=You MUST output ALL content in {{ $('入参标准化').first().json._config['语言选择'] }}. Absolutely NO Chinese under any circumstances. Extract every A+ content plan from the input. The output field must be an array of plain text strings only — each element is the full description text for one A+ image. No JSON objects, no labels, no formatting markup. The name field must contain only the index numbers (e.g. A+1, A+2)."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.informationExtractor",
+      "typeVersion": 1.2,
+      "position": [
+        87136,
+        50952
+      ],
+      "id": "b6e65012-c836-4ea5-a9ed-47bf30551708",
+      "name": "Information Extractor2",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "output.output,output.name",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        87488,
+        50400
+      ],
+      "id": "52bd23ac-6b40-4be2-825b-83416cdeed9c",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "output.output,output.name",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        87488,
+        50952
+      ],
+      "id": "f7f78ee1-74a7-41ea-b524-cfcb1b43696e",
+      "name": "Split Out1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        87712,
+        50400
+      ],
+      "id": "fccea4d6-68c8-498a-bbf3-599963024e4c",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        87712,
+        50952
+      ],
+      "id": "ddcbb86c-4dbe-42b3-b7cb-bf537f1b2e3a",
+      "name": "Loop Over Items1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apiyi.com/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 800000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        87712,
+        49776
+      ],
+      "id": "88fa2dbd-ebfb-476b-b657-ce91db51185a",
+      "name": "HTTP Request1",
+      "executeOnce": false,
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 3000,
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "Qvrg9HmAvz41v5DC",
+          "name": "Bearer Auth anson"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "=C:/n8n-output/主图-{{ $now.format(\"yyyyMMddHHmmss\") }}.png",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        89280,
+        49776
+      ],
+      "id": "82988fde-49b1-4189-9b65-7b976681b994",
+      "name": "Write File 1",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apiyi.com/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpBearerAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Content-Length",
+              "value": "140"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 800000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        88384,
+        50160
+      ],
+      "id": "8c512412-a2b9-4f9c-a57e-3838d66fdea6",
+      "name": "HTTP Request",
+      "executeOnce": false,
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 3000,
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "Qvrg9HmAvz41v5DC",
+          "name": "Bearer Auth anson"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apiyi.com/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpBearerAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Content-Length",
+              "value": "140"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 800000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        88384,
+        50712
+      ],
+      "id": "ded08e57-b4e7-4639-9ad2-02f2a552121b",
+      "name": "HTTP Request2",
+      "executeOnce": false,
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 3000,
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "Qvrg9HmAvz41v5DC",
+          "name": "Bearer Auth anson"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "=C:/n8n-output/副图-{{ $now.format(\"yyyyMMddHHmmss\") }}.png",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        89952,
+        50256
+      ],
+      "id": "4e7458a7-5813-4cc8-aaf8-1d8e0257e735",
+      "name": "Write File 2",
+      "executeOnce": false,
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "=C:/n8n-output/A+-{{ $now.format(\"yyyyMMddHHmmss\") }}.png",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        89952,
+        50808
+      ],
+      "id": "63e13aee-e5a2-4e00-81a4-1f4c040fc03b",
+      "name": "Write File 3",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "01269622-9081-4c3c-8395-df182f269156",
+              "leftValue": "={{ $json.choices[0].message.content }}",
+              "rightValue": "/data:image\\/(\\w+);base64,([^)\\s]+)/",
+              "operator": {
+                "type": "string",
+                "operation": "regex"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        87936,
+        49776
+      ],
+      "id": "9f43848c-5b0e-4e5b-ab6a-3356968e398c",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. 取出 content\nconst content = $input.first().json.choices[0].message.content;\n\nif (!content) {\n  throw new Error('content 不存在');\n}\n\n// 2. 用正则提取 Markdown 图片里的 URL\nconst match = content.match(/!\\[image\\]\\((https?:\\/\\/[^)]+)\\)/);\n\nif (!match) {\n  throw new Error('未匹配到图片 URL');\n}\n\n// 3. 提取 URL\nconst imageUrl = match[1];\n\n// 4. 返回\nreturn [\n  {\n    imageUrl,\n  },\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        88832,
+        49872
+      ],
+      "id": "d33fb53d-5e21-4889-9749-622afccde6a1",
+      "name": "Code in JavaScript3"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.imageUrl }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        89056,
+        49872
+      ],
+      "id": "8e03cd95-4b24-484e-b350-78585e3edc57",
+      "name": "HTTP Request5"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "01269622-9081-4c3c-8395-df182f269156",
+              "leftValue": "={{ $json.choices[0].message.content }}",
+              "rightValue": "/data:image\\/(\\w+);base64,([^)\\s]+)/",
+              "operator": {
+                "type": "string",
+                "operation": "regex"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        88608,
+        50160
+      ],
+      "id": "f0769354-d368-44e6-bde7-611f0377ab7f",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "01269622-9081-4c3c-8395-df182f269156",
+              "leftValue": "={{ $json.choices[0].message.content }}",
+              "rightValue": "/data:image\\/(\\w+);base64,([^)\\s]+)/",
+              "operator": {
+                "type": "string",
+                "operation": "regex"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        88608,
+        50712
+      ],
+      "id": "d7c9ba8d-99ca-4ead-a91f-cd3423711766",
+      "name": "If2"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. 取出 content\nconst content = $input.first().json.choices[0].message.content;\n\nif (!content) {\n  throw new Error('content 不存在');\n}\n\n// 2. 用正则提取 Markdown 图片里的 URL\nconst match = content.match(/!\\[image\\]\\((https?:\\/\\/[^)]+)\\)/);\n\nif (!match) {\n  throw new Error('未匹配到图片 URL');\n}\n\n// 3. 提取 URL\nconst imageUrl = match[1];\n\n// 4. 返回\nreturn [\n  {\n    imageUrl,\n  },\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        89056,
+        50256
+      ],
+      "id": "4e2d14cc-adae-4d9b-99e3-482a3f415ee2",
+      "name": "Code in JavaScript4",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.imageUrl }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        89280,
+        50256
+      ],
+      "id": "50d7f5b8-d947-44d2-a099-e869a988dcb8",
+      "name": "HTTP Request9",
+      "retryOnFail": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. 取出 content\nconst content = $input.first().json.choices[0].message.content;\n\nif (!content) {\n  throw new Error('content 不存在');\n}\n\n// 2. 用正则提取 Markdown 图片里的 URL\nconst match = content.match(/!\\[image\\]\\((https?:\\/\\/[^)]+)\\)/);\n\nif (!match) {\n  throw new Error('未匹配到图片 URL');\n}\n\n// 3. 提取 URL\nconst imageUrl = match[1];\n\n// 4. 返回\nreturn [\n  {\n    imageUrl,\n  },\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        89056,
+        50808
+      ],
+      "id": "e7c936f3-b947-4e85-8574-6b681a3c8e01",
+      "name": "Code in JavaScript5",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.imageUrl }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        89280,
+        50808
+      ],
+      "id": "5727f12a-c3ec-40e0-a64e-d43057f3b653",
+      "name": "HTTP Request10",
+      "retryOnFail": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "01269622-9081-4c3c-8395-df182f269156",
+              "leftValue": "={{ $json.choices[0].message.content }}",
+              "rightValue": "/!\\[image\\]\\((https?:\\/\\/[^)]+)\\)/",
+              "operator": {
+                "type": "string",
+                "operation": "regex"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        88832,
+        50256
+      ],
+      "id": "591be5d3-d7ed-47ad-a219-33556d2bf60f",
+      "name": "If3"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "01269622-9081-4c3c-8395-df182f269156",
+              "leftValue": "={{ $json.choices[0].message.content }}",
+              "rightValue": "/!\\[image\\]\\((https?:\\/\\/[^)]+)\\)/",
+              "operator": {
+                "type": "string",
+                "operation": "regex"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        88832,
+        50808
+      ],
+      "id": "e62d1530-45ac-478f-91d3-be614bc6e060",
+      "name": "If4"
+    },
+    {
+      "parameters": {
+        "jsCode": "const text1 = $input.first().json.output['Main Image Design Strategy'];\nconst imageBlocks = $('提取URL').first().json.imageUrls.slice(0, 1).map(url => ({ type: \"image_url\", image_url: url }));\n\nconst promptText = 'Create a clean Amazon main product image. White background, product centered at 80%, no text, no props, no watermarks. Commercial photography style, even lighting, true texture. Product must match the reference image exactly.';\n\nreturn [{ messages: [{ role: \"user\", content: [{ type: \"text\", text: text1 + '\\n\\n' + promptText }, ...imageBlocks] }] }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        87200,
+        49776
+      ],
+      "id": "b3dc26bf-6609-418c-a68e-93f36e9fd5e6",
+      "name": "Code in JavaScript9"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [\n  {\n    model: \"gemini-3.1-flash-image-preview-4k\",\n    //model: \"gemini-3.1-flash-image-preview\",\n    messages: $input.all()[0].json.messages\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        87488,
+        49776
+      ],
+      "id": "5e26d5c7-e672-4abb-8804-21274054230c",
+      "name": "Code in JavaScript10"
+    },
+    {
+      "parameters": {
+        "jsCode": "const text1 = $input.first().json['output.output'].description || $input.first().json['output.output'];\nconst lang = $('入参标准化').first().json._config['语言选择'];\nconst model = $('入参标准化').first().json._config['模特选择'];\nconst type = $('入参标准化').first().json._config['字体'];\n\nconst prompts = {\n  '英语': 'CRITICAL: Generate ONLY ONE SINGLE image. NO grid, NO collage, NO multiple images. Create ONE Amazon gallery image showing ONE product in ONE scene. The product must match the reference images exactly, with realistic usage scenarios. Image size 1600x1600, clear quality. Copy layout should be aesthetically pleasing and premium. Do not use absolute descriptions like \"extreme\". Model: ' + model + '. Copy font: ' + type + '.',\n  '德语': 'WICHTIG: Erzeuge NUR EIN EINZIGES Bild. KEIN Raster, KEINE Collage, KEINE mehreren Bilder. Erstellen Sie EIN Amazon-Galeriebild, das EIN Produkt in EINER Szene zeigt. Das Produkt muss genau den Referenzbildern entsprechen, mit realistischen Nutzungsszenarien. Bildgröße 1600x1600, klare Qualität. Das Layout sollte ästhetisch ansprechend und hochwertig sein. Verwenden Sie keine absoluten Beschreibungen wie \"extrem\". Modell: ' + model + '. Schriftart: ' + type + '.',\n  '法语': 'CRITIQUE: Générez UNE SEULE image. PAS de grille, PAS de collage, PAS d\\'images multiples. Créez UNE image galerie Amazon montrant UN produit dans UNE scène. Le produit doit correspondre exactement aux images de référence, avec des scénarios d\\'utilisation réalistes. Taille de l\\'image 1600x1600, qualité nette. La mise en page doit être esthétique et haut de gamme. N\\'utilisez pas de descriptions absolues comme \"extrême\". Modèle: ' + model + '. Police: ' + type + '.',\n  '俄语': 'ВАЖНО: Создайте ТОЛЬКО ОДНО изображение. БЕЗ сетки, БЕЗ коллажа, БЕЗ нескольких изображений. Создайте ОДНО изображение галереи Amazon, показывающее ОДИН продукт в ОДНОЙ сцене. Продукт должен точно соответствовать эталонным изображениям, с реалистичными сценариями использования. Размер изображения 1600x1600, чёткое качество. Макет должен быть эстетичным и премиальным. Не используйте абсолютные описания, такие как \"крайний\". Модель: ' + model + '. Шрифт: ' + type + '.',\n};\nconst promptText = prompts[lang] || prompts['英语'];\n\nconst imageBlocks = $('提取URL').first().json.imageUrls.map(url => ({ type: \"image_url\", image_url: url }));\nconst textBlock = { type: \"text\", text: text1 + '\\n\\n' + promptText };\nreturn [{ messages: [{ role: \"user\", content: [textBlock, ...imageBlocks] }] }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        87936,
+        50160
+      ],
+      "id": "2f851c52-13e6-4ed2-92ab-6563c2c2132a",
+      "name": "Code in JavaScript11"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [\n  {\n    model: \"gemini-3.1-flash-image-preview-4k\",\n    //model: \"gemini-3.1-flash-image-preview\",\n    messages: $input.all()[0].json.messages\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        88160,
+        50160
+      ],
+      "id": "36646e34-35b6-45d9-8864-83927204cf8f",
+      "name": "Code in JavaScript12"
+    },
+    {
+      "parameters": {
+        "jsCode": "const text1 = $input.first().json['output.output'].description || $input.first().json['output.output'];\nconst lang = $('入参标准化').first().json._config['语言选择'];\nconst model = $('入参标准化').first().json._config['模特选择'];\nconst type = $('入参标准化').first().json._config['字体'];\n\nconst prompts = {\n  '英语': 'CRITICAL: Generate ONLY ONE SINGLE image. NO grid, NO collage, NO multiple images. Create ONE Amazon A+ content image showing ONE product in ONE scene. The product must match the reference images exactly, with realistic usage scenarios. Image size 970x600, clear quality. Copy layout should be aesthetically pleasing and premium. Do not use absolute descriptions like \"extreme\". Model: ' + model + '. Copy font: ' + type + '.',\n  '德语': 'WICHTIG: Erzeuge NUR EIN EINZIGES Bild. KEIN Raster, KEINE Collage, KEINE mehreren Bilder. Erstellen Sie EIN Amazon A+ Content-Bild, das EIN Produkt in EINER Szene zeigt. Das Produkt muss genau den Referenzbildern entsprechen, mit realistischen Nutzungsszenarien. Bildgröße 970x600, klare Qualität. Das Layout sollte ästhetisch ansprechend und hochwertig sein. Verwenden Sie keine absoluten Beschreibungen wie \"extrem\". Modell: ' + model + '. Schriftart: ' + type + '.',\n  '法语': 'CRITIQUE: Générez UNE SEULE image. PAS de grille, PAS de collage, PAS d\\'images multiples. Créez UNE image de contenu A+ Amazon montrant UN produit dans UNE scène. Le produit doit correspondre exactement aux images de référence, avec des scénarios d\\'utilisation réalistes. Taille de l\\'image 970x600, qualité nette. La mise en page doit être esthétique et haut de gamme. N\\'utilisez pas de descriptions absolues comme \"extrême\". Modèle: ' + model + '. Police: ' + type + '.',\n  '俄语': 'ВАЖНО: Создайте ТОЛЬКО ОДНО изображение. БЕЗ сетки, БЕЗ коллажа, БЕЗ нескольких изображений. Создайте ОДНО изображение контента A+ Amazon, показывающее ОДИН продукт в ОДНОЙ сцене. Продукт должен точно соответствовать эталонным изображениям, с реалистичными сценариями использования. Размер изображения 970x600, чёткое качество. Макет должен быть эстетичным и премиальным. Не используйте абсолютные описания, такие как \"крайний\". Модель: ' + model + '. Шрифт: ' + type + '.',\n};\nconst promptText = prompts[lang] || prompts['英语'];\n\nconst imageBlocks = $('提取URL').first().json.imageUrls.map(url => ({ type: \"image_url\", image_url: url }));\nconst textBlock = { type: \"text\", text: text1 + '\\n\\n' + promptText };\nreturn [{ messages: [{ role: \"user\", content: [textBlock, ...imageBlocks] }] }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        87936,
+        50712
+      ],
+      "id": "6671db50-eff3-4703-b3a0-f73f70cd261a",
+      "name": "Code in JavaScript13"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [\n  {\n    model: \"gemini-3.1-flash-image-preview-4k\",\n    //model: \"gemini-3.1-flash-image-preview\",\n    messages: $input.all()[0].json.messages\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        88160,
+        50712
+      ],
+      "id": "9e77da59-78d3-412e-9745-44574d9353f5",
+      "name": "Code in JavaScript14"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "01269622-9081-4c3c-8395-df182f269156",
+              "leftValue": "={{ $json.choices[0].message.content }}",
+              "rightValue": "/!\\[image\\]\\((https?:\\/\\/[^)]+)\\)/",
+              "operator": {
+                "type": "string",
+                "operation": "regex"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        88608,
+        49872
+      ],
+      "id": "6baca2a0-31b3-448f-a4b5-fc1269c6e4d3",
+      "name": "If5"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. 精确取出 Gemini 返回的 Markdown 图片\n\n\n\nreturn [\n  {\n    binary: {\n        data: {\n        data: Buffer.from($input.first().json.base64, 'base64'),\n        mimeType: \"image/png\",\n\n      },\n    },\n  },\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        88384,
+        49680
+      ],
+      "id": "d0f9673f-9398-4180-b1db-f4f002894384",
+      "name": "Code in JavaScript16",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. 精确取出 Gemini 返回的 Markdown 图片\nconst content = $json.choices[0].message.content;\n\nif (!content) {\n  throw new Error('choices[0].message.content 不存在');\n}\n\n// 2. 从 Markdown 中提取 Base64\n// 匹配：![image](data:image/jpeg;base64,AAAA)\nconst match = content.match(/data:image\\/(\\w+);base64,([^)\\s]+)/);\n\nif (!match) {\n  throw new Error('未在 content 中找到 Base64 图片');\n}\n\n// 3. 拿到图片类型和 Base64\nconst ext = match[1];       // jpeg / png\nconst base64 = match[2];    // 纯 Base64\n\n// 4. Base64 → Buffer\nconst buffer = Buffer.from(base64, 'base64');\n\n// 5. 返回 n8n Binary\nreturn [\n  {\n    base64\n  },\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        88832,
+        50064
+      ],
+      "id": "26bb3154-ddb0-4c60-8bb6-0855106502f4",
+      "name": "Code in JavaScript17"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. 精确取出 Gemini 返回的 Markdown 图片\nconst content = $json.choices[0].message.content;\n\nif (!content) {\n  throw new Error('choices[0].message.content 不存在');\n}\n\n// 2. 从 Markdown 中提取 Base64\n// 匹配：![image](data:image/jpeg;base64,AAAA)\nconst match = content.match(/data:image\\/(\\w+);base64,([^)\\s]+)/);\n\nif (!match) {\n  throw new Error('未在 content 中找到 Base64 图片');\n}\n\n// 3. 拿到图片类型和 Base64\nconst ext = match[1];       // jpeg / png\nconst base64 = match[2];    // 纯 Base64\n\n// 4. Base64 → Buffer\nconst buffer = Buffer.from(base64, 'base64');\n\n// 5. 返回 n8n Binary\nreturn [\n  {\n    base64\n  },\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        88832,
+        50616
+      ],
+      "id": "3ed68844-0c72-4729-8e53-8676cb4fd602",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. 精确取出 Gemini 返回的 Markdown 图片\n\n\n\nreturn [\n  {\n    binary: {\n        data: {\n        data: Buffer.from($input.first().json.base64, 'base64'),\n        mimeType: \"image/png\",\n\n      },\n    },\n  },\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        89056,
+        50064
+      ],
+      "id": "71c05513-da93-45e7-93d5-43031608cb72",
+      "name": "Code in JavaScript20",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. 精确取出 Gemini 返回的 Markdown 图片\n\n\n\nreturn [\n  {\n    binary: {\n        data: {\n        data: Buffer.from($input.first().json.base64, 'base64'),\n        mimeType: \"image/png\",\n\n      },\n    },\n  },\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        89056,
+        50616
+      ],
+      "id": "c5d55619-3636-492f-bfe1-ad27b06f6897",
+      "name": "Code in JavaScript21",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json.body || {};\n\nconst defaults = {\n  '语言选择': '英语',\n  '模特选择': 'male',\n  '字体': 'Sans Serif',\n  '品牌': '',\n  '产品名称': '',\n  '产品介绍': '',\n  '反提示词': '',\n  '模式': '自动生成',\n};\n\nconst modelMap = {\n  '男性': 'male', '男': 'male', 'male': 'male', 'Male': 'male',\n  '女性': 'female', '女': 'female', 'female': 'female', 'Female': 'female',\n  '无': 'none', '无模特': 'none', 'none': 'none',\n};\n\nconst langMap = {\n  '英语': '英语', 'english': '英语', 'English': '英语',\n  '德语': '德语', 'german': '德语', 'German': '德语',\n  '法语': '法语', 'french': '法语', 'French': '法语',\n  '俄语': '俄语', 'russian': '俄语', 'Russian': '俄语',\n};\n\nconst config = {};\nfor (const [key, def] of Object.entries(defaults)) {\n  const val = raw[key];\n  config[key] = Array.isArray(val) ? (val[0] || def) : (val || def);\n}\n\nconfig['模特选择'] = modelMap[config['模特选择']] || 'male';\nconfig['语言选择'] = langMap[config['语言选择']] || '英语';\nconfig['模式'] = config['模式'] === '用户布局' ? '用户布局' : '自动生成';\n\nreturn [{ json: { ...raw, _config: config } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        84960,
+        50400
+      ],
+      "id": "88f29573-e430-4517-90c8-a1b7b5e985c6",
+      "name": "入参标准化"
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json || {};\nconst json = raw.body || raw;\nconst productBases = (json['产品图'] || []).filter(Boolean);\nconst refBases = (json['参考图'] || []).filter(Boolean);\nconst items = [];\nlet refIndex = 1;\n\nfor (const b64 of productBases) {\n  // Strip data:image/xxx;base64, prefix\n  const parts = b64.split(',');\n  const base64data = parts[1] || parts[0];\n  items.push({\n    json: { imageType: 'product', refIndex: 0 },\n    binary: { image: { data: base64data, mimeType: 'image/jpeg', fileName: 'product.jpg' } }\n  });\n}\nfor (const b64 of refBases) {\n  const parts = b64.split(',');\n  const base64data = parts[1] || parts[0];\n  items.push({\n    json: { imageType: 'reference', refIndex: refIndex++ },\n    binary: { image: { data: base64data, mimeType: 'image/png', fileName: 'ref.png' } }\n  });\n}\nreturn items.length > 0 ? items : [{ json: { error: 'NO IMAGES' } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        85184,
+        50400
+      ],
+      "id": "e96b52b9-90ee-4acc-91ab-d8eade25f7a9",
+      "name": "图片处理"
+    },
+    {
+      "parameters": {
+        "operation": "uploadFile",
+        "file": "image",
+        "additionalFieldsFile": {}
+      },
+      "type": "n8n-nodes-cloudinary.cloudinary",
+      "typeVersion": 1,
+      "position": [
+        85408,
+        50400
+      ],
+      "id": "c42ce315-b4f6-4055-b1eb-598ccd64dfc7",
+      "name": "格式转化",
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 3000,
+      "credentials": {
+        "cloudinaryApi": {
+          "id": "THyRo0gyrsGtmMx9",
+          "name": "Cloudinary anson"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const productUrls = [];\nlet referenceUrl = null;\n\nfor (const item of $input.all()) {\n  const url = item.json.secure_url;\n  if (!url) continue;\n  if (item.json.imageType === 'reference') {\n    referenceUrl = referenceUrl || url;\n  } else {\n    productUrls.push(url);\n  }\n}\n\nreturn [{\n  imageUrls: productUrls,\n  count: productUrls.length,\n  referenceUrl,\n  imageContents: productUrls.map(url => ({ type: 'image_url', image_url: url })),\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        85632,
+        50400
+      ],
+      "id": "83e9c85b-7a65-4d6c-b46b-f7676139e947",
+      "name": "提取URL"
+    },
+    {
+      "parameters": {
+        "jsCode": "const imageContents = $('提取URL').first().json.imageUrls.map(url => ({\n  type: \"image_url\",\n  image_url: url\n}));\n\nreturn [\n  {\n    imageContents\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        85968,
+        50400
+      ],
+      "id": "25bab416-b34c-4182-bafe-46ed0686524a",
+      "name": "统一格式"
+    },
+    {
+      "parameters": {
+        "jsCode": "const intro = $('入参标准化').first().json._config['产品介绍'];\n\nconst body = {\n  model: \"gpt-4o\",\n  messages: [{\n    role: \"user\",\n    content: [{\n      type: \"text\",\n      text: `你是一名亚马逊电商产品分析助手，该产品${intro}。请仅基于我上传的产品图片和产品介绍进行分析，不得引入图片中未明确展示的信息，不得猜测或虚构功能、材质或使用效果。从图片中识别并描述产品的外观结构、颜色、材质特征、细节设计、可见功能点及潜在使用场景。在此基础上，提炼 3–5 个可以被图片直接验证的产品卖点，卖点需以\"用户能获得的实际好处\"为导向，表达克制、客观，不使用夸张或极限词。输出内容需符合亚马逊合规与 TOP 100 Listing 风格，语言清晰，可直接用于 Listing 文案或图片策划参考。输出不带换行。`\n    }, {\n      type: \"image_url\",\n      image_url: { url: $input.first().json.imageContents[0].image_url }\n    }]\n  }]\n};\n\nreturn [{ json: { body } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        86024,
+        50400
+      ],
+      "id": "f8a12b3c-7d5e-4f9a-b1c2-3d4e5f6a7b8c",
+      "name": "构建分析请求"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apiyi.com/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.body }}",
+        "options": {}
+      },
+      "position": [
+        86080,
+        50400
+      ],
+      "id": "b0b2c36e-6c6e-46cb-89dd-ba4ee8195bd1",
+      "name": "分析图片",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "Qvrg9HmAvz41v5DC",
+          "name": "Bearer Auth anson"
+        }
+      },
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=用户提供的产品信息：{{ $('入参标准化').first().json._config['产品名称'] }}\n用户输入的产品卖点：{{ $('分析图片').first().json.choices[0].message.content }}\n用户提供的图片：{{ $('提取URL').item.json.imageUrls }}\n用户提供的语言要求：{{ $('入参标准化').first().json._config['语言选择'] }}",
+        "options": {
+          "systemMessage": "=# 角色\n你是一位顶级的亚马逊创意总监。你负责为品牌制定从吸引点击到最终转化的全链路视觉解决方案。你深知主图、副图、A+详情图在用户决策流程中扮演的不同角色，并擅长让它们协同作战，最大化产品的吸引力。\n\n# 背景信息 (Context)\n用户提供的产品信息\n\n#产品图片\n用户提供的图片\n\n#产品语言定位\n用户提供的语言要求\n\n# 任务\n你已经收到了运营团队提供的结构化产品卖点。现在，请你作为创意总监，参考产品图片，结合背景信息和产品卖点，为该产品策划并输出一套完整的图片设计方案。此方案必须包含三个核心部分：主图、副图和A+的设计策略与具体说明。\n\n**你的工作流程如下：**\n1.  **进行“设计风格定位”**: 首先，基于产品、用户和卖点，为整个项目确立统一的视觉风格基调，并阐述理由。这是后续所有设计的基础。\n2.  **规划“视觉资产组合”**: 在你制定的风格指导下，分别为【主图】、【副图】和【A+】这三个关键触点，设计其独特的视觉呈现方案，明确各自的沟通任务和表现形式。\n\n# 输入的产品卖点\n用户输入的产品卖点\n\n# 输出要求\n请严格按照以下结构输出。确保第一部分的“风格定位”能够统领副图和A+，第二部分的“资产方案”中，主图、副图、A+三者之间逻辑清晰、层层递进。图片中的文案禁止使用极致这种绝对的描述。你必须用{{ $('入参标准化').first().json._config['语言选择'] }}输出全部内容，禁止使用中文。主图、副图、A+的每个方案都必须明确指出使用模特的性别，使用的模特为{{ $('入参标准化').first().json._config['模特选择'] }}。\n\n---\n\n### **第一部分：整体设计风格定位**\n\n要求：整体的风格要协调，展示产品时不能过于单一，要使用不同的角度或者模特姿势，排版布局要美观且高级。\n* **推荐主风格**: [AI根据输入信息，在此处给出建议，例如：温暖居家日系风]\n* **设计策略阐述**: [AI必须在此处详细阐述选择此风格的理由。例如：鉴于本产品为“智能恒温冲奶机”，目标用户是注重科学喂养的新手爸妈，因此：\n    1.  **主风格“温暖居家日系风”**: 能营造温馨、安全、治愈的氛围，精准触达母婴人群的情感诉求，与冰冷的科技产品形成差异化。\n    2.  **辅助风格“场景化叙事”**: 能将产品功能融入真实的育儿场景（如夜间喂奶、外出携带），让用户直观感受到产品带来的便利，产生强烈代入感。]\n\n---\n\n### **第二部分：整合视觉资产方案**\n\n#### **2.1 主图设计 (Main Image Design Strategy)**\n* **核心任务**: **脱颖而出，吸引点击**。在众多竞品中凭借独特的视觉风格胜出。\n* **总体要求**: 白色纯背景，产品居中占比80%，要将产品完全展现出来，服装类产品需要搭配模特，但是主要还是展示产品。光线均匀清晰，不含文字与道具，真实质感，商业摄影风格。婴儿或儿童服装禁止使用模特而是平铺展示产品，其余类型的产品多用模特展示。\n\n#### **2.2 副图矩阵设计 (Gallery Image Plan)**\n* **核心任务**: **快速说服，建立兴趣**。在用户滑动的前5张图内，快速展示产品的核心卖点、使用场景和整体外观，打消初步疑虑。分析产品的具体定位，生成不同的设计方案，服装类产品使用人物模特时多采用不同的姿势，要和参考图有区别。设计出来的方案要贴合当下亚马逊电商的潮流和实际应用的情况，要与产品紧密相关。必须明确指出使用模特的性别，使用的模特为{{ $('入参标准化').first().json._config['模特选择'] }}。\n* **设计方案 (按产品卖点顺序来排布)**，例如：\n副图1｜核心卖点展示：产品置于左侧区域，右侧40%留白用于文字排列。轻度信息图风格，3–4个简洁图标纵向排布，每个图标旁配短词（5词以内）。标题粗体置顶，文字层级分明（标题>图标说明），排版克制、留白充足，背景干净，符合亚马逊用户快速扫读习惯。\n副图2｜真实使用场景：以场景氛围为主，文字极简——仅底部或右下角放置一行短标签（8词以内），半透明深色底条衬底保证可读性，不破坏画面氛围。产品作为画面焦点，人物动作自然，光线自然，符合亚马逊”真实体验”风格。\n副图3｜真实使用场景：与副图2使用不同的场景和模特姿势。产品作为画面焦点，文字放在顶部或侧边自然留白处（与副图2底部标签形成位置差异），1–2句简短卖点说明，左对齐，字号中等偏小，不抢产品风头，符合亚马逊”真实体验”风格。\n副图4｜细节与材质：产品局部细节放大展示，微距摄影风格。使用细线引导线+短词标注关键细节，引导线颜色与产品色调协调，标注文字小号字体置于引导线末端。背景极简纯色，画面视觉重心在细节本身，突出产品品质与可靠性。\n副图5｜功能说明：模块化网格布局，每个功能模块包含一个线稿图标+一行功能标题+一行简短说明（各不超过5词）。图标在上、文字在下，2×2或2×3网格排列，模块间距统一。图标统一描边风格且大小一致。文字居中，标题粗体、说明常规体，整体干净有序。\n副图6｜尺寸展示：产品俯拍或正视图，背景纯白。用细线标注关键尺寸（长/宽/高），标注线外侧末端标注数字+单位，数字字体清晰无衬线。产品旁可放置常见参照物辅助感知大小。构图极简，仅保留产品和尺寸标注线，画面留白≥60%。\n\n\n\n\n输出参考格式如下:\n    * **副图1 (对应核心卖点A)**: \n    * **副图2 (对应核心卖点B)**: \n    * **副图3 (对应核心卖点C)**: \n    * **副图4 (对应核心卖点D)**: \n    * **副图5 (对应核心卖点E)**: \n    * **副图6 (对应核心卖点F)**: \n\n\n#### **2.3 A+设计 (A+ Content Structure)**\n* **核心任务**: **深度沟通，建立信任，完成转化**。为亚马逊A+内容生成4─5张高转化电商视觉图，整体风格专业、高端、干净，符合欧美亚马逊审美。分析产品的具体定位，生成不同的设计方案，服装类产品使用人物模特时多采用不同的姿势，要和参考图的姿势有区别。必须明确指出使用模特的性别，使用的模特为{{ $('入参标准化').first().json._config['模特选择'] }}。\n* **设计方案 (模块化叙事结构)**，例如：\n第1张：品牌形象图，画面上方放置品牌Logo+名称，中部为产品使用场景，底部放置一句核心价值主张（12词以内，粗体大字，居中或左对齐）。文字与产品之间留足呼吸空间。背景为使用场景图，品牌色点缀，突出品牌可信度与专业感。\n第2张：核心卖点图，图标+短词呈现3–4个核心优势。1×4横向排列或2×2网格排列。图标线稿风格统一、大小一致，下方配短词（5词以内），文字居中、无衬线字体。模块间距均匀，整体居中对齐，背景干净浅色系，画面清晰易读。\n第3张：使用场景图，全幅场景，产品自然融入环境。文字极简——画面顶部或底部留白区放置一行标题+一行说明（各不超过10词），左对齐，字号适中，颜色与背景对比度充足，不破坏场景沉浸感，体现产品使用价值。\n第4张：使用场景图，与第3张使用不同场景和构图角度。分屏布局——左侧60%为产品使用场景，右侧40%为纯色背景上2–3个核心卖点短句纵向排列，左对齐，文字前配小圆点或短线点缀，整体干净利落。\n第5张：使用场景图，变换场景与模特姿势，与第3、4张形成差异化。上下分区布局——上方70%为场景图，下方30%为深色底条上放置1–2句总结性文字+品牌Logo，文字反白、居中排列，简洁收尾，强化品牌记忆。\n\n\n\n输出参考格式如下:\n    * **A+ 1 (对应核心卖点A)**: \n    * **A+ 2 (对应核心卖点B)**: \n    * **A+ 3 (对应核心卖点C)**: \n    * **A+ 4 (对应核心卖点D)**: "
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        86432,
+        50400
+      ],
+      "id": "d4607897-1d39-46bc-ac44-e5fb9446bab3",
+      "name": "ImageDesignAgent",
+      "retryOnFail": true,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "text": "={{ $json.output }}",
+        "attributes": {
+          "attributes": [
+            {
+              "name": "Gallery Image Plan",
+              "description": "副图设计方案，根据符号顺序输出所有内容",
+              "required": true
+            },
+            {
+              "name": "A+ Content Structure",
+              "description": "详情图设计方案，根据符号顺序输出所有内容",
+              "required": true
+            },
+            {
+              "name": "Main Image Design Strategy",
+              "description": "提取第二部分的主图设计方案，引号用括号替换",
+              "required": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.informationExtractor",
+      "typeVersion": 1.2,
+      "position": [
+        86784,
+        50400
+      ],
+      "id": "be7649f2-c545-4a0c-ad8a-dd12ba988f1d",
+      "name": "PlanSplitter",
+      "retryOnFail": true,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "content": "主图\n",
+        "height": 448,
+        "width": 2768
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        87024,
+        49600
+      ],
+      "typeVersion": 1,
+      "id": "8d4c2040-f00f-46bc-8f0e-ec2d56835786",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "副图",
+        "height": 496,
+        "width": 3136,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        87024,
+        50080
+      ],
+      "typeVersion": 1,
+      "id": "3f66e337-7633-45fd-976d-f393a82edf7f",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "A+",
+        "height": 496,
+        "width": 3136,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        87024,
+        50616
+      ],
+      "typeVersion": 1,
+      "id": "5e7d7b97-7cd7-4776-8599-19bdd834000a",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. 精确取出 Gemini 返回的 Markdown 图片\nconst content = $json.choices[0].message.content;\n\nif (!content) {\n  throw new Error('choices[0].message.content 不存在');\n}\n\n// 2. 从 Markdown 中提取 Base64\n// 匹配：![image](data:image/jpeg;base64,AAAA)\nconst match = content.match(/data:image\\/(\\w+);base64,([^)\\s]+)/);\n\nif (!match) {\n  throw new Error('未在 content 中找到 Base64 图片');\n}\n\n// 3. 拿到图片类型和 Base64\nconst ext = match[1];       // jpeg / png\nconst base64 = match[2];    // 纯 Base64\n\n// 4. Base64 → Buffer\nconst buffer = Buffer.from(base64, 'base64');\n\n// 5. 返回 n8n Binary\nreturn [\n  {\n    base64\n  },\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        88160,
+        49680
+      ],
+      "id": "9076723d-e342-4ca6-ac36-36ff816c26f3",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Collect done signal from 副图 Loop\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        89344,
+        51456
+      ],
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "name": "副图循环结束"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Collect done signal from A+ Loop\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        89344,
+        51984
+      ],
+      "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "name": "A+循环结束"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "ImageDesignAgent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DeepSeek Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "PlanSplitter",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Information Extractor1",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Information Extractor2",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Information Extractor1": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Information Extractor2": {
+      "main": [
+        [
+          {
+            "node": "Split Out1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript11",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "副图循环结束",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript13",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "A+循环结束",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request2": {
+      "main": [
+        [
+          {
+            "node": "If2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript3": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request5": {
+      "main": [
+        [
+          {
+            "node": "Write File 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript17",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If2": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript4": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request9",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request9": {
+      "main": [
+        [
+          {
+            "node": "Write File 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript5": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request10",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request10": {
+      "main": [
+        [
+          {
+            "node": "Write File 3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If3": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript4",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If4": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript5",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript9": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript10",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript10": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript11": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript12",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript12": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript13": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript14",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript14": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If5": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript16": {
+      "main": [
+        [
+          {
+            "node": "Write File 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript17": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript20",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript21",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript20": {
+      "main": [
+        [
+          {
+            "node": "Write File 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript21": {
+      "main": [
+        [
+          {
+            "node": "Write File 3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "格式转化": {
+      "main": [
+        [
+          {
+            "node": "提取URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "提取URL": {
+      "main": [
+        [
+          {
+            "node": "统一格式",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "统一格式": {
+      "main": [
+        [
+          {
+            "node": "构建分析请求",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ImageDesignAgent": {
+      "main": [
+        [
+          {
+            "node": "PlanSplitter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PlanSplitter": {
+      "main": [
+        [
+          {
+            "node": "Information Extractor2",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Information Extractor1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Code in JavaScript9",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript16",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "入参标准化",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "图片处理": {
+      "main": [
+        [
+          {
+            "node": "格式转化",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "入参标准化": {
+      "main": [
+        [
+          {
+            "node": "图片处理",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write File 2": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write File 3": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "分析图片": {
+      "main": [
+        [
+          {
+            "node": "ImageDesignAgent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "构建分析请求": {
+      "main": [
+        [
+          {
+            "node": "分析图片",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "4e7f70ef-4bcf-44d1-a19c-a14d3755b9e9",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "135084b3bb7274c527a366d848e674d33b72d6fe177419deba5bad666702a0e3"
+  },
+  "id": "GvRPaQWEt3LXL1NT",
+  "tags": [
+    {
+      "updatedAt": "2026-04-20T03:43:10.848Z",
+      "createdAt": "2026-04-20T03:43:10.848Z",
+      "id": "JCcfYw6ili70eK19",
+      "name": "测试"
+    }
+  ]
+}
