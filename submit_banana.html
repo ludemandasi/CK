@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>🍌</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',Helvetica,Arial,sans-serif;
+    background:linear-gradient(135deg,#0f0c29 0%,#302b63 50%,#24243e 100%);
+    min-height:100vh;padding:40px 20px;overflow-x:hidden;animation:fadeIn .6s ease}
+  @keyframes fadeIn{0%{opacity:0;transform:translateY(20px)}100%{opacity:1;transform:translateY(0)}}
+
+  ::-webkit-scrollbar{width:6px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:3px}
+  ::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.25)}
+
+  #particleCanvas{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0}
+  #confettiCanvas{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1000;display:none}
+
+  .container{position:relative;z-index:1;max-width:580px;margin:0 auto;
+    background:rgba(255,255,255,.06);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+    border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:36px 28px;
+    box-shadow:0 24px 60px rgba(0,0,0,.35)}
+
+  .banana-wrap{text-align:center;margin-bottom:8px}
+  h2{color:#fff;font-size:36px;display:inline-block;animation:wobble 3s ease-in-out infinite}
+  @keyframes wobble{0%,100%{transform:rotate(-5deg) scale(1)}50%{transform:rotate(5deg) scale(1.1)}}
+  .subtitle{color:rgba(255,255,255,.4);text-align:center;font-size:13px;margin-bottom:28px;letter-spacing:2px}
+
+  .section{margin-bottom:18px}
+
+  label{display:block;margin-top:12px;font-weight:600;color:rgba(255,255,255,.75);font-size:13px}
+  input[type="text"],input:not([type]),textarea{
+    width:100%;padding:10px 13px;margin-top:4px;
+    background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;
+    font-size:14px;color:#fff;transition:all .25s}
+  input::placeholder,textarea::placeholder{color:rgba(255,255,255,.25)}
+  input:focus,textarea:focus{outline:0;border-color:#667eea;
+    background:rgba(255,255,255,.09);box-shadow:0 0 16px rgba(102,126,234,.15)}
+
+  /* Custom dropdown */
+  .dropdown{position:relative;margin-top:4px}
+  .dropdown-trigger{display:flex;align-items:center;justify-content:space-between;
+    padding:10px 13px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
+    border-radius:10px;font-size:14px;color:#fff;cursor:pointer;transition:all .25s;user-select:none}
+  .dropdown-trigger:hover{border-color:rgba(255,255,255,.2);background:rgba(255,255,255,.09)}
+  .dropdown-trigger.open{border-color:#667eea;
+    box-shadow:0 0 16px rgba(102,126,234,.15);background:rgba(255,255,255,.09)}
+  .dropdown-arrow{width:14px;height:14px;transition:transform .3s ease;flex-shrink:0;
+    background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='8'%3E%3Cpath d='M1 1l6 6 6-6' stroke='rgba(255,255,255,.5)' stroke-width='1.5' fill='none'/%3E%3C/svg%3E") center no-repeat;background-size:contain}
+  .dropdown-trigger.open .dropdown-arrow{transform:rotate(180deg)}
+
+  .dropdown-menu{position:absolute;top:calc(100% + 6px);left:0;right:0;
+    background:rgba(30,27,60,.96);backdrop-filter:blur(12px);
+    border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:4px;z-index:100;
+    max-height:0;opacity:0;overflow:hidden;
+    transition:max-height .35s ease,opacity .25s ease,padding .35s ease}
+  .dropdown-menu.open{max-height:240px;opacity:1;padding:6px;overflow-y:auto;
+    box-shadow:0 12px 32px rgba(0,0,0,.4)}
+  .dropdown-option{padding:9px 12px;border-radius:6px;font-size:14px;color:rgba(255,255,255,.75);
+    cursor:pointer;transition:all .15s}
+  .dropdown-option:hover{background:rgba(102,126,234,.2);color:#fff}
+  .dropdown-option.active{background:rgba(102,126,234,.25);color:#fff;font-weight:600}
+
+  .file-area{margin-top:4px;padding:16px;border:2px dashed rgba(255,255,255,.12);border-radius:10px;
+    text-align:center;cursor:pointer;transition:all .25s;position:relative}
+  .file-area:hover{border-color:rgba(102,126,234,.5);background:rgba(102,126,234,.05)}
+  .file-area .text{color:rgba(255,255,255,.35);font-size:13px}
+  .file-area .count{color:#667eea;font-weight:600;font-size:13px;margin-top:2px}
+  .file-area input[type="file"]{position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer}
+
+  .row{display:flex;gap:10px}
+  .row>*{flex:1}
+
+  .url-preview{font-family:'Courier New',monospace;font-size:11px;color:rgba(255,255,255,.25);
+    word-break:break-all;margin-top:8px;padding:6px 10px;background:rgba(0,0,0,.15);border-radius:6px}
+  .url-preview span{color:#667eea}
+
+  .submit-btn{width:100%;margin-top:22px;padding:13px;font-size:15px;font-weight:700;color:#fff;
+    background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);border:0;border-radius:10px;cursor:pointer;
+    transition:all .3s;letter-spacing:.5px}
+  .submit-btn:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(102,126,234,.35)}
+  .submit-btn:active{transform:scale(.96)}
+  .submit-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
+  .overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);
+    backdrop-filter:blur(4px);z-index:999;justify-content:center;align-items:center}
+  .overlay.show{display:flex}
+  .dialog{background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid rgba(255,255,255,.1);
+    border-radius:16px;padding:32px;text-align:center;max-width:380px;width:90%;
+    box-shadow:0 24px 60px rgba(0,0,0,.5);animation:popIn .3s ease}
+  @keyframes popIn{0%{transform:scale(.85);opacity:0}50%{transform:scale(1.02)}100%{transform:scale(1);opacity:1}}
+  .dialog .icon{font-size:48px;margin-bottom:12px}
+  .dialog p{font-size:15px;color:rgba(255,255,255,.8);margin-bottom:18px;font-weight:600}
+  .dialog button{padding:9px 36px;font-size:14px;width:auto;border-radius:8px;
+    background:linear-gradient(135deg,#667eea,#764ba2);border:0;color:#fff;font-weight:600;cursor:pointer}
+</style></head><body>
+
+<canvas id="particleCanvas"></canvas>
+<canvas id="confettiCanvas"></canvas>
+
+<div class="container">
+  <div class="banana-wrap"><h2>🍌</h2></div>
+  <div class="subtitle">BANANA STUDIO</div>
+
+  <input type="hidden" id="n8nUrl" value="http://192.168.31.23:5678">
+
+  <div class="section">
+    <div class="row">
+      <div><label>类型</label>
+      <div class="dropdown" id="dd-webhookType">
+        <div class="dropdown-trigger" onclick="toggleDropdown('dd-webhookType')">
+          <span class="dd-value">Test</span><div class="dropdown-arrow"></div>
+        </div>
+        <div class="dropdown-menu">
+          <div class="dropdown-option active" data-value="webhook-test">Test</div>
+          <div class="dropdown-option" data-value="webhook">Production</div>
+        </div>
+      </div></div>
+      <div><label>路径</label>
+      <input type="text" id="webhookPath" value="kevin-banana" oninput="buildWebhookUrl()"></div>
+    </div>
+    <div class="url-preview">→ <span id="webhookPreview">填写 n8n 地址后自动生成</span></div>
+  </div>
+
+  <div class="section">
+    <label>🏷️ 产品名称</label>
+    <input type="text" id="产品名称" placeholder="输入产品名称">
+    <label>📝 产品介绍</label>
+    <textarea id="产品介绍" rows="2" placeholder="输入产品介绍文案"></textarea>
+    <label>📷 产品图</label>
+    <div class="file-area" id="fileArea">
+      <div class="text">点击或拖拽上传</div>
+      <div class="count" id="产品图Count">已选 0 张</div>
+      <input type="file" id="产品图Input" multiple accept="image/*">
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="row">
+      <div><label>👤 模特</label>
+      <div class="dropdown" id="dd-模特">
+        <div class="dropdown-trigger" onclick="toggleDropdown('dd-模特')">
+          <span class="dd-value">女性</span><div class="dropdown-arrow"></div>
+        </div>
+        <div class="dropdown-menu">
+          <div class="dropdown-option active" data-value="女性">女性</div>
+          <div class="dropdown-option" data-value="男性">男性</div>
+          <div class="dropdown-option" data-value="男女通用">男女通用</div>
+          <div class="dropdown-option" data-value="小型犬">小型犬</div>
+          <div class="dropdown-option" data-value="大型犬">大型犬</div>
+          <div class="dropdown-option" data-value="女孩">女孩</div>
+          <div class="dropdown-option" data-value="男孩">男孩</div>
+          <div class="dropdown-option" data-value="纯物品">纯物品</div>
+        </div>
+      </div></div>
+      <div><label>🌍 语言</label>
+      <div class="dropdown" id="dd-语言">
+        <div class="dropdown-trigger" onclick="toggleDropdown('dd-语言')">
+          <span class="dd-value">英语</span><div class="dropdown-arrow"></div>
+        </div>
+        <div class="dropdown-menu">
+          <div class="dropdown-option active" data-value="英语">英语</div>
+          <div class="dropdown-option" data-value="德语">德语</div>
+          <div class="dropdown-option" data-value="法语">法语</div>
+          <div class="dropdown-option" data-value="俄语">俄语</div>
+        </div>
+      </div></div>
+      <div><label>🔤 字体</label>
+      <div class="dropdown" id="dd-字体">
+        <div class="dropdown-trigger" onclick="toggleDropdown('dd-字体')">
+          <span class="dd-value">Acumin</span><div class="dropdown-arrow"></div>
+        </div>
+        <div class="dropdown-menu">
+          <div class="dropdown-option active" data-value="AcuminVariableConcept">Acumin</div>
+          <div class="dropdown-option" data-value="Happy-Dance">Happy-Dance</div>
+          <div class="dropdown-option" data-value="Cambria">Cambria</div>
+        </div>
+      </div></div>
+      <div><label>💎 品牌</label>
+      <div class="dropdown" id="dd-品牌">
+        <div class="dropdown-trigger" onclick="toggleDropdown('dd-品牌')">
+          <span class="dd-value">无</span><div class="dropdown-arrow"></div>
+        </div>
+        <div class="dropdown-menu">
+          <div class="dropdown-option active" data-value="">无</div>
+          <div class="dropdown-option" data-value="Sahunfri">Sahunfri</div>
+          <div class="dropdown-option" data-value="Fiohiros">Fiohiros</div>
+          <div class="dropdown-option" data-value="Viiotu">Viiotu</div>
+          <div class="dropdown-option" data-value="Supcomsta">Supcomsta</div>
+        </div>
+      </div></div>
+    </div>
+  </div>
+
+  <button id="submitBtn" class="submit-btn" onclick="submit()">提交生成</button>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="dialog">
+    <div class="icon" id="dialogIcon"></div>
+    <p id="dialogMsg"></p>
+    <button onclick="closeDialog()">确定</button>
+  </div>
+</div>
+
+<script>
+// Dropdown system
+function toggleDropdown(id){
+  const dd=document.getElementById(id);
+  const trigger=dd.querySelector('.dropdown-trigger');
+  const menu=dd.querySelector('.dropdown-menu');
+  const isOpen=trigger.classList.contains('open');
+  // Close all
+  document.querySelectorAll('.dropdown-trigger.open').forEach(t=>t.classList.remove('open'));
+  document.querySelectorAll('.dropdown-menu.open').forEach(m=>m.classList.remove('open'));
+  if(!isOpen){trigger.classList.add('open');menu.classList.add('open');}
+}
+document.querySelectorAll('.dropdown-option').forEach(opt=>{
+  opt.addEventListener('click',function(){
+    const dd=this.closest('.dropdown');
+    const trigger=dd.querySelector('.dd-value');
+    trigger.textContent=this.textContent;
+    dd.querySelectorAll('.dropdown-option').forEach(o=>o.classList.remove('active'));
+    this.classList.add('active');
+    dd.querySelector('.dropdown-trigger').classList.remove('open');
+    dd.querySelector('.dropdown-menu').classList.remove('open');
+    if(dd.id==='dd-webhookType')buildWebhookUrl();
+  });
+});
+document.addEventListener('click',function(e){
+  if(!e.target.closest('.dropdown')){
+    document.querySelectorAll('.dropdown-trigger.open').forEach(t=>t.classList.remove('open'));
+    document.querySelectorAll('.dropdown-menu.open').forEach(m=>m.classList.remove('open'));
+  }
+});
+function getDropdownValue(id){
+  const dd=document.getElementById(id);
+  const active=dd.querySelector('.dropdown-option.active');
+  return active?active.dataset.value:'';
+}
+
+// Particles - rich multi-layer
+(function(){
+  const c=document.getElementById('particleCanvas');
+  const ctx=c.getContext('2d');
+  let W,H,particles=[];
+  const COUNT=140;
+  function resize(){W=c.width=window.innerWidth;H=c.height=window.innerHeight;}
+  window.addEventListener('resize',resize);resize();
+  const colors=['102,126,234','118,75,162','240,147,251','130,200,255','255,255,255'];
+  const shapes=['circle','circle','circle','diamond','triangle','star','ring'];
+  class P{constructor(){this.reset(true);}
+    reset(init){
+      this.x=init?Math.random()*W:Math.random()>.5?-20:W+20;
+      this.y=init?Math.random()*H:H+20;
+      this.r=Math.random()<.15?Math.random()*3+3:Math.random()*1.5+.5;
+      this.shape=shapes[Math.floor(Math.random()*shapes.length)];
+      this.color=colors[Math.floor(Math.random()*colors.length)];
+      this.vx=(Math.random()-.5)*.6;this.vy=-(Math.random()*.4+.15);
+      this.alpha=Math.random()*.5+.1;
+      this.pulse=Math.random()*Math.PI*2;
+      this.pulseSpeed=Math.random()*.02+.01;
+      this.rot=Math.random()*Math.PI*2;
+      this.rotSpeed=(Math.random()-.5)*.02;
+    }
+    update(){
+      this.x+=this.vx;this.y+=this.vy;
+      this.pulse+=this.pulseSpeed;this.rot+=this.rotSpeed;
+      const pulseAlpha=this.alpha*(0.7+0.3*Math.sin(this.pulse));
+      if(this.y<-20||this.x<-40||this.x>W+40)this.reset(false);
+      return pulseAlpha;
+    }
+    draw(a){
+      ctx.save();ctx.translate(this.x,this.y);ctx.rotate(this.rot);
+      ctx.fillStyle=`rgba(${this.color},${a})`;
+      ctx.strokeStyle=`rgba(${this.color},${a})`;ctx.lineWidth=1;
+      if(this.shape==='circle'){
+        ctx.beginPath();ctx.arc(0,0,this.r,0,Math.PI*2);ctx.fill();
+      }else if(this.shape==='diamond'){
+        ctx.beginPath();ctx.moveTo(0,-this.r);ctx.lineTo(this.r,0);ctx.lineTo(0,this.r);ctx.lineTo(-this.r,0);ctx.closePath();ctx.fill();
+      }else if(this.shape==='triangle'){
+        ctx.beginPath();ctx.moveTo(0,-this.r);ctx.lineTo(this.r,this.r*.7);ctx.lineTo(-this.r,this.r*.7);ctx.closePath();ctx.fill();
+      }else if(this.shape==='star'){
+        ctx.beginPath();
+        for(let i=0;i<5;i++){const ang=i*Math.PI*2/5-Math.PI/2;ctx.lineTo(Math.cos(ang)*this.r,Math.sin(ang)*this.r);
+          const ang2=ang+Math.PI/5;ctx.lineTo(Math.cos(ang2)*this.r*.4,Math.sin(ang2)*this.r*.4);}
+        ctx.closePath();ctx.fill();
+      }else if(this.shape==='ring'){
+        ctx.beginPath();ctx.arc(0,0,this.r,0,Math.PI*2);ctx.stroke();
+      }
+      if(this.r>2){ctx.beginPath();ctx.arc(0,0,this.r*3,0,Math.PI*2);
+        ctx.fillStyle=`rgba(${this.color},${a*.1})`;ctx.fill();}
+      ctx.restore();
+    }
+  }
+  for(let i=0;i<COUNT;i++)particles.push(new P());
+  function loop(){
+    ctx.clearRect(0,0,W,H);
+    const alphas=particles.map(p=>p.update());
+    particles.forEach((p,i)=>p.draw(alphas[i]));
+    // connections
+    for(let i=0;i<particles.length;i++){
+      if(particles[i].r<2)continue;
+      for(let j=i+1;j<particles.length;j++){
+        const dx=particles[i].x-particles[j].x,dy=particles[i].y-particles[j].y,d=Math.sqrt(dx*dx+dy*dy);
+        if(d<160){
+          ctx.beginPath();ctx.moveTo(particles[i].x,particles[i].y);ctx.lineTo(particles[j].x,particles[j].y);
+          const ci=particles[i].color;
+          ctx.strokeStyle=`rgba(${ci},${.15*(1-d/160)})`;ctx.lineWidth=.6;ctx.stroke();
+        }
+      }
+    }
+    requestAnimationFrame(loop);
+  }
+  loop();
+})();
+
+let 产品图=[];
+document.getElementById('n8nUrl').oninput=buildWebhookUrl;
+buildWebhookUrl();
+
+function buildWebhookUrl(){
+  const base=document.getElementById('n8nUrl').value.replace(/\/+$/,'');
+  const type=getDropdownValue('dd-webhookType');
+  const path=document.getElementById('webhookPath').value;
+  const url=base?`${base}/${type}/${path}`:'填写 n8n 地址后自动生成';
+  document.getElementById('webhookPreview').textContent=url;
+}
+
+document.getElementById('产品图Input').onchange=function(e){loadImages(e)};
+
+async function compressImage(b64,maxW=2000,quality=0.85){
+  return new Promise(resolve=>{
+    const img=new Image();img.onload=()=>{let w=img.width,h=img.height;if(w>maxW){h=Math.round(h*maxW/w);w=maxW;}
+      const cv=document.createElement('canvas');cv.width=w;cv.height=h;cv.getContext('2d').drawImage(img,0,0,w,h);
+      resolve(cv.toDataURL('image/jpeg',quality));};img.src=b64;});
+}
+
+async function loadImages(event){
+  产品图=[];
+  for(const f of event.target.files){
+    const b64=await new Promise(r=>{const fr=new FileReader();fr.onload=e=>r(e.target.result);fr.readAsDataURL(f)});
+    产品图.push(b64.length>1024*1024?await compressImage(b64):b64);
+  }
+  document.getElementById('产品图Count').textContent='已选 '+产品图.length+' 张';
+}
+
+function showDialog(icon,msg){document.getElementById('dialogIcon').textContent=icon;
+  document.getElementById('dialogMsg').textContent=msg;document.getElementById('overlay').classList.add('show');
+  if(icon==='✅')launchConfetti();}
+function closeDialog(){document.getElementById('overlay').classList.remove('show');}
+
+// Confetti animation
+function launchConfetti(){
+  const canvas=document.getElementById('confettiCanvas');
+  const ctx=canvas.getContext('2d');
+  const dpr=window.devicePixelRatio||1;
+  canvas.width=window.innerWidth*dpr;
+  canvas.height=window.innerHeight*dpr;
+  canvas.style.width=window.innerWidth+'px';
+  canvas.style.height=window.innerHeight+'px';
+  ctx.scale(dpr,dpr);
+  canvas.style.display='block';
+  
+  const W=window.innerWidth;
+  const H=window.innerHeight;
+  const confettiCount=100;
+  const colors=['#667eea','#764ba2','#f093fb','#82c8ff','#ffd700','#ff6b6b','#4ecdc4','#ffe66d'];
+  let confetti=[];
+  let startTime=performance.now();
+  const duration=2500;
+  
+  class Confetti{
+    constructor(){
+      this.x=Math.random()*W;
+      this.y=-Math.random()*H*.5-H*.2;
+      this.w=Math.random()*8+4;
+      this.h=this.w*.6;
+      this.color=colors[Math.random()*colors.length|0];
+      this.vx=(Math.random()-.5)*3;
+      this.vy=Math.random()*2+3;
+      this.rot=Math.random()*6.28;
+      this.rotV=(Math.random()-.5)*.15;
+      this.oscV=Math.random()*.03+.02;
+      this.oscD=Math.random()*20+10;
+      this.phase=Math.random()*6.28;
+    }
+    update(dt){
+      const speed=dt*.06;
+      this.x+=this.vx*speed+Math.sin(this.phase)*this.oscD*.01*speed;
+      this.y+=this.vy*speed;
+      this.rot+=this.rotV*speed;
+      this.phase+=this.oscV*speed;
+      this.vy+=.03*speed;
+      if(this.y>H+20){
+        this.y=-20;
+        this.x=Math.random()*W;
+        this.vy=Math.random()*2+3;
+      }
+    }
+    draw(){
+      ctx.save();
+      ctx.translate(this.x,this.y);
+      ctx.rotate(this.rot);
+      ctx.fillStyle=this.color;
+      ctx.fillRect(-this.w*.5,-this.h*.5,this.w,this.h);
+      ctx.restore();
+    }
+  }
+  
+  for(let i=0;i<confettiCount;i++)confetti.push(new Confetti());
+  
+  function animate(now){
+    const elapsed=now-startTime;
+    if(elapsed>=duration){
+      ctx.clearRect(0,0,W,H);
+      canvas.style.display='none';
+      confetti=null;
+      return;
+    }
+    
+    const dt=now-(animate.last||now);
+    animate.last=now;
+    
+    ctx.clearRect(0,0,W,H);
+    
+    for(let i=0;i<confetti.length;i++){
+      confetti[i].update(dt);
+      confetti[i].draw();
+    }
+    
+    requestAnimationFrame(animate);
+  }
+  
+  animate.last=0;
+  requestAnimationFrame(animate);
+}
+
+async function submit(){
+  const btn=document.getElementById('submitBtn');
+  btn.disabled=true;btn.textContent='提交中...';
+  const webhookUrl=document.getElementById('webhookPreview').textContent;
+  if(!webhookUrl.startsWith('http')){showDialog('❌','请先填写 n8n 地址');btn.disabled=false;btn.textContent='提交生成';return;}
+  try{
+    const payload={_urlType:getDropdownValue('dd-webhookType'),
+      产品名称:document.getElementById('产品名称').value,产品介绍:document.getElementById('产品介绍').value,产品图,
+      模特选择:[getDropdownValue('dd-模特')],语言选择:[getDropdownValue('dd-语言')],
+      字体:[getDropdownValue('dd-字体')],品牌:getDropdownValue('dd-品牌')};
+    const res=await fetch(webhookUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    if(res.ok)showDialog('✅','提交成功');
+    else showDialog('❌','提交失败');
+  }catch(e){showDialog('❌','提交失败');}
+  btn.disabled=false;btn.textContent='提交生成';
+}
+</script>
+</body></html>
