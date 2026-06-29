@@ -8,6 +8,7 @@ A short description of the project — what CK is and what problem it solves.
 - [Features](#features)
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
+- [Quick Start](#quick-start)
 - [Usage](#usage)
 - [Configuration](#configuration)
 - [Examples](#examples)
@@ -56,9 +57,39 @@ npm install
 npm run start
 ```
 
+## Quick Start
+
+A minimal quick start so users can run something right away.
+
+1. Clone the repo and open the project folder.
+2. If there is an `index.html`, open it with your browser: `open index.html` (macOS) or double-click the file.
+3. To run a local server (recommended):
+
+```bash
+# from project root
+npx serve .
+# then open http://localhost:3000
+```
+
+If the project has a build step, run:
+
+```bash
+npm install
+npm run build
+npm run start
+```
+
 ## Usage
 
 Describe how to use the project and any common workflows or commands. Include screenshots or GIFs if helpful.
+
+Example (if the project exposes a function or a UI):
+
+```html
+<!-- Example: embed or use a component from this repo -->
+<div id="app">Hello CK</div>
+<script src="./main.js"></script>
+```
 
 ## Configuration
 
@@ -68,9 +99,16 @@ Explain any configuration files or environment variables the user may need to ch
 
 Show at least one concrete example or code snippet demonstrating a common task or use case.
 
+### Example: Basic page
+
+1. Open `index.html` in your browser.
+2. You should see a simple demo page. If not, check the browser console for errors.
+
+![screenshot placeholder](docs/screenshot.png)
+
 ## Contributing
 
-Contributions are welcome! Please read `CONTRIBUTING.md` (if present) for details on the code of conduct, and the process for submitting pull requests.
+Thank you for considering contributing! Please see `CONTRIBUTING.md` for guidelines on how to open issues and submit pull requests.
 
 ## License
 
